@@ -12,6 +12,134 @@ Skills prefixed with `bx-` are custom-built. The remaining skills are collected 
 - [Tailwind Design System](https://skills.sh/wshobson/agents/tailwind)
 - [UI/UX Pro Max](https://skills.sh/nextlevelbuilder/ui)
 
+## Installation
+
+### Linux / macOS
+
+Clone the repo and run the sync script to install all skills at once:
+
+```bash
+# Clone to a permanent location
+git clone https://github.com/bitranox/skills.git ~/repos/skills
+
+# Install skills to ~/.claude/skills/
+~/repos/skills/sync-skills.sh
+```
+
+To update later, just run the sync script again — it pulls the latest changes automatically:
+
+```bash
+~/repos/skills/sync-skills.sh
+```
+
+To add skills to a specific project instead:
+
+```bash
+cd ~/my-project
+~/repos/skills/psync-skills.sh
+```
+
+### Windows (PowerShell 5.x+)
+
+```powershell
+# Clone to a permanent location
+git clone https://github.com/bitranox/skills.git $env:USERPROFILE\repos\skills
+
+# Install skills to ~/.claude/skills/
+& $env:USERPROFILE\repos\skills\sync-skills.ps1
+```
+
+To update later:
+
+```powershell
+& $env:USERPROFILE\repos\skills\sync-skills.ps1
+```
+
+To add skills to a specific project instead:
+
+```powershell
+cd C:\my-project
+& $env:USERPROFILE\repos\skills\psync-skills.ps1
+```
+
+## Sync Scripts
+
+Two pairs of scripts are provided (Bash and PowerShell) to sync skill directories from this repo to their target locations.
+
+### `sync-skills.sh` / `sync-skills.ps1` — Sync to user-level skills
+
+Syncs all skill directories to `~/.claude/skills/`. On Linux, ownership is inherited from `$HOME`.
+
+```bash
+# Bash - from anywhere:
+~/repos/skills/sync-skills.sh
+```
+
+```powershell
+# PowerShell - from anywhere:
+& $env:USERPROFILE\repos\skills\sync-skills.ps1
+```
+
+If you directly clone the repo into `~/.claude/skills/`, the script detects this and will only `git pull` without copying.
+
+### `psync-skills.sh` / `psync-skills.ps1` — Sync to project-level skills
+
+Syncs all skill directories to `<cwd>/.claude/skills/`. On Linux, ownership is inherited from the current working directory. Run this from the root of the project you want to add skills to.
+
+```bash
+# Bash - from a project directory:
+cd ~/my-project
+~/repos/skills/psync-skills.sh
+```
+
+```powershell
+# PowerShell - from a project directory:
+cd C:\my-project
+& $env:USERPROFILE\repos\skills\psync-skills.ps1
+```
+
+All scripts auto-detect the repo location, run `git pull` first, and skip hidden directories (`.git`) and regular files.
+
+## Auto-Update via Shell Alias
+
+### Bash
+
+Add the following to `~/.bashrc` to automatically sync skills before every `claude` session:
+
+```bash
+alias claude='~/repos/skills/sync-skills.sh && command claude'
+```
+
+Reload your shell or run `source ~/.bashrc` to activate.
+
+For project-level skills instead:
+
+```bash
+alias claude='~/repos/skills/psync-skills.sh && command claude'
+```
+
+### PowerShell
+
+Run this once to add the alias to your PowerShell profile:
+
+```powershell
+if (!(Test-Path $PROFILE)) { New-Item -Path $PROFILE -ItemType File -Force }
+Add-Content -Path $PROFILE -Value @'
+
+function Invoke-Claude {
+    & $env:USERPROFILE\repos\skills\sync-skills.ps1
+    & claude @args
+}
+Set-Alias -Name claude -Value Invoke-Claude
+'@
+```
+
+Reload PowerShell or run `. $PROFILE` to activate.
+
+For project-level skills instead, replace `sync-skills.ps1` with `psync-skills.ps1` in the snippet above.
+
+All arguments are passed through, so `claude --help`, `claude -p "prompt"`, etc. work as expected.
+
 ## Skills
 
 | Skill                              | Description                                                                                                                                                                    |
