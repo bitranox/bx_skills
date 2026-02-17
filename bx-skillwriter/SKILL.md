@@ -1,5 +1,5 @@
 ---
-name: writing-skills
+name: bx-skillwriter
 description: Use when creating new skills, editing existing skills, structuring SKILL.md files, writing skill frontmatter, testing skills with subagents, deploying skills, or verifying skills work before deployment
 ---
 
