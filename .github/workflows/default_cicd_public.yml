@@ -125,7 +125,7 @@ jobs:
         id: bandit
         continue-on-error: true
         shell: bash
-        run: bandit -q -r ${{ env.SRC_PATH }}/${{ env.PACKAGE_MODULE }} ${{ env.BANDIT_SKIP_FLAG }}
+        run: bandit -q -c pyproject.toml -r ${{ env.SRC_PATH }}/${{ env.PACKAGE_MODULE }} ${{ env.BANDIT_SKIP_FLAG }}
 
       - name: Run pip-audit (vulnerability scan)
         id: pipaudit
@@ -234,50 +234,3 @@ jobs:
         continue-on-error: true
         run: uv cache prune --ci
 
-  notebooks:
-    name: Execute notebooks (ubuntu, Python 3.14)
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-python@v6
-        with:
-          python-version: "3.14"
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v7
-        with:
-          enable-cache: true
-          prune-cache: false
-
-      - name: Install notebook runner deps
-        run: |
-          uv pip install --system nbclient nbformat ipykernel jupyter_client
-          python -m ipykernel install --user --name python3 --display-name "Python 3"
-      - name: Execute Quickstart notebook
-        env:
-          PIP_DISABLE_PIP_VERSION_CHECK: "1"
-          PIP_NO_INPUT: "1"
-        run: |
-          python - << 'PY'
-          from pathlib import Path
-
-          import nbformat
-          from nbclient import NotebookClient
-
-          nb_path = Path('notebooks/Quickstart.ipynb')
-          if not nb_path.exists():
-              raise SystemExit(f"Notebook not found: {nb_path}")
-
-          notebook = nbformat.read(nb_path, as_version=4)
-          client = NotebookClient(
-              notebook,
-              timeout=900,
-              kernel_name='python3',
-              allow_errors=False,
-          )
-          client.execute()
-
-          out_path = Path('notebooks/Quickstart-executed.ipynb')
-          nbformat.write(notebook, out_path)
-          print(f"Executed notebook written to: {out_path}")
-          PY

@@ -37,6 +37,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - TUI `ResultsScreen` crash (`AttributeError: 'ResultsScreen' object has no attribute 'call_from_thread'`):
   changed `self.call_from_thread()` to `self.app.call_from_thread()` in the threaded worker.
+- CI: Bandit scan now reads `pyproject.toml` config to exclude `catalog_skills/` from scanning.
+- CI: Removed notebook execution job (no notebooks in this project).
 
 ### Changed
 
