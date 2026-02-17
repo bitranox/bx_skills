@@ -1,0 +1,41 @@
+Cluster Configuration
+Environment: Proxmox VE 9.x (Enterprise/Community)
+Nodes: get the number of nodes and the node names and adresses with "pvecm status"
+Quorum Status: check the quorum status with "pvecm status" and report immideately if not quorate 
+API Access: Via pvesh (local) or Proxmox API (remote)
+Storage: determine the storage used with "pvesm status" and "cat /etc/pve/storage.cfg"
+
+Safety Protocols
+No destructive bulk operations: Commands affecting more than one node simultaneously (reboot, shutdown, bulk VM stop) must be explicitly confirmed by the user.
+Quorum check: Before every node reboot or maintenance mode, check: pvecm status. Abort the operation if quorum would be jeopardized.
+Backup first: Before changes to VM configurations or upgrades, verify that a current backup exists (vzdump).
+No force delete: Never use --purge or --force without double-validating the resource ID first.
+HA status: Before changes to HA clusters, always check HA manager status first (ha-manager status).
+
+Management Commands (Cheat Sheet)
+Cluster status: pvecm status / pvecm nodes
+VM/LXC list (global): pvesh get /cluster/resources --type vm
+Node metrics: pvesh get /nodes/{node}/status
+Storage check: pvesh get /storage
+Replication status: pvesh get /cluster/replication
+Service log: journalctl -u pve-cluster -f
+
+Code & Response Style
+Responses: Short, technically precise, focus on CLI commands (pvesh).
+Troubleshooting: On errors, always query the affected node's logs first (/var/log/pveproxy/access.log).
+JSON preference: For data queries, prefer pvesh --output-format json to cleanly analyze the data structure.
+Rollback plan: Every proposed change must include a (mental) rollback step.
+
+Special Workflows for 8 Nodes
+Updates: Always sequential (rolling updates). Node 1 -> test -> Node 2.
+Migration: For load-balancing proposals, check target node utilization (cpu, mem) beforehand.
+Network: Always prepare interface changes with ifreload -a, never kill the interface directly.
+ID management: Before creating VMs, verify the VM ID is within range [YOUR RANGE, e.g. 1000-2000] to avoid collisions with existing clusters.
+
+Network Diagnostics (Cluster-Wide)
+Interface status (API): pvesh get /nodes/{node}/network (shows bridges, bonds, and IPs)
+Bonding check (LACP/failover): cat /proc/net/bonding/bondX (replace X with bond ID, usually 0 or 1)
+OVS status (if used): ovs-vsctl show
+MTU & link speed: ip link show (important for 10G/25G/40G backplane checks)
+VLAN bridge check: bridge vlan show
+Test network configuration: ifreload -a --test (before activation!)

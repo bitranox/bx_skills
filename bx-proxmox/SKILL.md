@@ -1,5 +1,5 @@
 ---
-name: proxmox-admin-guide
+name: bx-proxmox
 description: >-
   Use when configuring, managing, or troubleshooting Proxmox VE -
   installation, host administration, clusters, VMs, containers,
