@@ -163,7 +163,8 @@ pretty_print = true
 
 [tool.bandit]
 exclude_dirs = [
-  "src/bx_skills/catalog_skills",
+  "catalog_skills",
+  "catalog_commands",
   "tests",
 ]
 
