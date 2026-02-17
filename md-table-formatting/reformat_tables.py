@@ -7,7 +7,8 @@ Rules applied:
 - Content cells have exactly one space padding
 - Consistent column count per table
 - Preserves column alignment markers (:---, :---:, ---:)
-- Skips tables inside fenced code blocks
+- Reformats tables inside ```markdown / ```md fenced code blocks
+- Skips tables inside all other fenced code blocks
 
 Usage:
     python3 reformat_tables.py file.md [file2.md ...]
@@ -163,8 +164,10 @@ def reformat_table(lines):
 
 
 def reformat_file(filepath, *, check_only=False, backup=False):
-    """Reformat all tables in a file, skipping fenced code blocks.
+    """Reformat all tables in a file.
 
+    Tables inside ```markdown / ```md fenced code blocks are reformatted.
+    Tables inside all other fenced code blocks are skipped.
     Returns True if the file was (or would be) changed.
     """
     with open(filepath, 'r', encoding='utf-8') as f:
@@ -175,6 +178,7 @@ def reformat_file(filepath, *, check_only=False, backup=False):
     result = []
     table_lines = []
     in_fence = False
+    in_markdown_fence = False
     fence_char = None
     fence_len = 0
 
@@ -194,6 +198,10 @@ def reformat_file(filepath, *, check_only=False, backup=False):
                 in_fence = True
                 fence_char = fence_match.group(1)[0]
                 fence_len = len(fence_match.group(1))
+                # Check if the code block is tagged as markdown
+                info_string = lstripped[len(fence_match.group(1)):].strip()
+                lang = info_string.split()[0].lower() if info_string else ''
+                in_markdown_fence = lang in ('markdown', 'md')
                 result.append(line)
                 continue
             else:
@@ -202,11 +210,14 @@ def reformat_file(filepath, *, check_only=False, backup=False):
                 if (close_match
                         and close_match.group(1)[0] == fence_char
                         and len(close_match.group(1)) >= fence_len):
+                    if in_markdown_fence:
+                        flush_table()
                     in_fence = False
+                    in_markdown_fence = False
                 result.append(line)
                 continue
 
-        if in_fence:
+        if in_fence and not in_markdown_fence:
             result.append(line)
             continue
 

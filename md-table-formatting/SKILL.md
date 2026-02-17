@@ -64,6 +64,10 @@ Every row ends with a closing `|`.
 
 Every row (header, separator, data) must have the same number of columns.
 
+### 6. Reformat tables inside markdown fenced code blocks
+
+Tables inside fenced code blocks tagged with `markdown` or `md` are reformatted using the same rules as tables in the document body. Tables in other code blocks (e.g., `python`, `json`) are left untouched.
+
 ## Quick Reference
 
 ```
@@ -88,4 +92,4 @@ python3 skills/md-table-formatting/reformat_tables.py --check file.md
 python3 skills/md-table-formatting/reformat_tables.py --backup file.md
 ```
 
-Safe by design: skips tables inside fenced code blocks, preserves alignment markers (`:---`, `:---:`, `---:`), handles pipes inside backtick spans, and bails on tables with inconsistent column counts.
+Safe by design: reformats tables inside `` ```markdown ``/`` ```md `` fenced code blocks, skips all other fenced code blocks, preserves alignment markers (`:---`, `:---:`, `---:`), handles pipes inside backtick spans, and bails on tables with inconsistent column counts.

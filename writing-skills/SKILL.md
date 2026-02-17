@@ -21,14 +21,14 @@ You write test cases (pressure scenarios with subagents), watch them fail (basel
 
 ## Reference Files
 
-| Topic                                                                      | File                              |
-|----------------------------------------------------------------------------|-----------------------------------|
-| Testing methodology — pressure scenarios, RED/GREEN/REFACTOR, meta-testing | testing-skills-with-subagents.md  |
-| Persuasion principles — authority, commitment, scarcity, social proof      | persuasion-principles.md          |
-| Anthropic official best practices — conciseness, freedom, structure        | anthropic-best-practices.md       |
-| Graphviz conventions — node shapes, edge labels, naming patterns           | graphviz-conventions.dot          |
-| Flowchart rendering — SVG output from dot diagrams                         | render-graphs.js                  |
-| Worked example — full test campaign testing CLAUDE.md variants             | examples/CLAUDE_MD_TESTING.md     |
+| Topic                                                                      | File                             |
+|----------------------------------------------------------------------------|----------------------------------|
+| Testing methodology — pressure scenarios, RED/GREEN/REFACTOR, meta-testing | testing-skills-with-subagents.md |
+| Persuasion principles — authority, commitment, scarcity, social proof      | persuasion-principles.md         |
+| Anthropic official best practices — conciseness, freedom, structure        | anthropic-best-practices.md      |
+| Graphviz conventions — node shapes, edge labels, naming patterns           | graphviz-conventions.dot         |
+| Flowchart rendering — SVG output from dot diagrams                         | render-graphs.js                 |
+| Worked example — full test campaign testing CLAUDE.md variants             | examples/CLAUDE_MD_TESTING.md    |
 
 Use the Read tool to load referenced files identified as relevant for full details.
 
@@ -120,11 +120,11 @@ Don't rely on passive `> Source:` annotations in supporting files — agents tre
 ```markdown
 ## Reference Files
 
-| Topic                                             | Distilled reference          | Upstream source (full detail)     |
-|---------------------------------------------------|------------------------------|-----------------------------------|
-| Core API — Client, Session, request(), stream()   | api-reference.md             | docs/api/full-reference.md        |
-| Config — Settings, env vars, pyproject section     | configuration.md             | docs/guides/configuration.md      |
-| Tutorials — quickstart, first app, deployment      | quick-start.md               | tutorial/getting-started/README.md|
+| Topic                                            | Distilled reference | Upstream source (full detail)      |
+|--------------------------------------------------|---------------------|------------------------------------|
+| Core API — Client, Session, request(), stream()  | api-reference.md    | docs/api/full-reference.md         |
+| Config — Settings, env vars, pyproject section    | configuration.md    | docs/guides/configuration.md       |
+| Tutorials — quickstart, first app, deployment     | quick-start.md      | tutorial/getting-started/README.md |
 
 Use the Read tool to load a distilled reference first.
 If it lacks the detail you need, load the upstream source.
@@ -133,13 +133,13 @@ If it lacks the detail you need, load the upstream source.
 The upstream table should work as a comprehensive index so an agent can jump straight to the right file for any specific class, function, or method. Each row needs to list the concrete API symbols the file covers, not just a prose summary.
 
 ```markdown
-| Topic                                                     | Upstream source              |
-|-----------------------------------------------------------|------------------------------|
-| ❌ Widgets                                                | docs/widgets.md              |
-| ✅ Widgets — DataTable, Tree, OptionList, Select, Input   | docs/widgets.md              |
+| Topic                                                   | Upstream source |
+|---------------------------------------------------------|-----------------|
+| ❌ Widgets                                              | docs/widgets.md |
+| ✅ Widgets — DataTable, Tree, OptionList, Select, Input | docs/widgets.md |
 ```
 
-**Building routing tables:** For each supporting file, use `grep -E '^#{2,3} ' filename.md` to extract H2/H3 headings. List the 3-5 most important headings, class names, or function names as the topic description for that row. If a file covers more than 5 key terms, pick the ones an agent is most likely to search for and add an "etc." or "and more" suffix.
+**Building routing tables:** For each supporting file, use `grep -E '^#{2,3} ' filename.md` to extract H2/H3 headings. For tier 1 (distilled reference) rows, list the 3-5 most important headings, class names, or function names as the topic description. If a file covers more than 5 key terms, pick the ones an agent is most likely to search for and add an "etc." or "and more" suffix. For tier 2 (upstream source) rows, list all classes, functions, API endpoints, and key concepts — the upstream column serves as a comprehensive index, so every symbol must be findable through the topic description.
 
 **Evaluating routing descriptions:** For each row in a routing table, ask: given a realistic user query, could Claude pick the right file from the topic description alone? If two rows sound equally plausible for the same query, the descriptions need more differentiation.
 
@@ -151,20 +151,20 @@ Common failures:
 Fix: expand topic descriptions to include 2-3 disambiguating subtopics or keywords.
 
 ```markdown
-| Topic                                         | Distilled reference   |
-|-----------------------------------------------|-----------------------|
-| ❌ API                                        | api-reference.md      |
-| ❌ Config                                     | configuration.md      |
-| ✅ Core API — endpoints, auth, rate limits    | api-reference.md      |
-| ✅ Config — env vars, CLI flags, config files | configuration.md      |
+| Topic                                         | Distilled reference |
+|-----------------------------------------------|---------------------|
+| ❌ API                                        | api-reference.md    |
+| ❌ Config                                     | configuration.md    |
+| ✅ Core API — endpoints, auth, rate limits    | api-reference.md    |
+| ✅ Config — env vars, CLI flags, config files | configuration.md    |
 ```
 
-**Verifying routing tables:** After writing a routing table, run two checks to confirm it is both complete and accurate:
+**Verifying routing tables:** After writing a routing table, run two checks to confirm it is both complete and accurate. For two-tier tables, run both checks independently for the distilled reference column and the upstream source column:
 
 1. **Coverage check (file → table):** For each referenced file, run `grep -E '^#{2,3} ' filename.md` to extract its headings. For each heading or key term, confirm it appears in the routing table's topic description for that file. Missing terms = content agents can't find through the table.
 2. **Accuracy check (table → file):** For each search term listed in the routing table, run `grep -i "term" filename.md` to confirm the file actually contains it. Mismatches = stale entries that route agents to the wrong file.
 
-A routing table passes when every key term in the file appears in the table (coverage) and every term in the table appears in the file (accuracy). For files with 10+ headings, coverage is sufficient if the top 5 most-queried terms are represented.
+A routing table passes when every key term in the file appears in the table (coverage) and every term in the table appears in the file (accuracy). For tier 1 rows with 10+ headings, coverage is sufficient if the top 5 most-queried terms are represented. For tier 2 rows, coverage requires all classes, functions, and API endpoints — no "top 5" shortcut. Both columns must pass independently.
 
 Example:
 
@@ -175,11 +175,25 @@ Referenced file `widgets.md` contains headings: DataTable, Tree, Select, Input, 
 | Widgets — DataTable, Tree, OptionList, Select, Input | widgets.md |
 
 ❌ Coverage check fails — routing table says:
-| Widgets | widgets.md |
+| Widgets                                              | widgets.md |
 (agent searching for "DataTable" won't find the right file)
 
 ✅ Accuracy check passes — grep widgets.md for "DataTable" → found
 ❌ Accuracy check fails — routing table lists "TreeView" but file only contains "Tree"
+```
+
+Tier 2 example (upstream source column):
+
+```markdown
+Routing table row:
+| Core API — Client, Session, request(), stream() | api-reference.md | docs/api/full-reference.md  |
+
+Upstream file `docs/api/full-reference.md` contains headings: Client, Session, request, stream, Connection, Retry
+
+❌ Tier 2 coverage check fails — topic lists 4 of 6 symbols; missing Connection and Retry → add them to topic description
+❌ Tier 2 accuracy check fails — topic lists "stream()" but upstream file heading is "Streaming" → fix topic or confirm alias
+
+Fixed topic: Core API — Client, Session, request(), Streaming, Connection, Retry
 ```
 
 ## SKILL.md Structure
@@ -591,11 +605,11 @@ This cuts off entire class of "I'm following the spirit" rationalizations.
 Capture rationalizations from baseline testing (see Testing section below). Every excuse agents make goes in the table:
 
 ```markdown
-| Excuse | Reality |
-|--------|---------|
-| "Too simple to test" | Simple code breaks. Test takes 30 seconds. |
-| "I'll test after" | Tests passing immediately prove nothing. |
-| "Tests after achieve same goals" | Tests-after = "what does this do?" Tests-first = "what should this do?" |
+| Excuse                           | Reality                                                                  |
+|----------------------------------|--------------------------------------------------------------------------|
+| "Too simple to test"             | Simple code breaks. Test takes 30 seconds.                               |
+| "I'll test after"                | Tests passing immediately prove nothing.                                 |
+| "Tests after achieve same goals" | Tests-after = "what does this do?" Tests-first = "what should this do?"  |
 ```
 
 ### Create Red Flags List
@@ -807,7 +821,7 @@ Deploying untested skills = deploying untested code. It's a violation of quality
 - [ ] Supporting files only for tools or heavy reference
 - [ ] Hub skills: routing table with topic descriptions for each supporting file
 - [ ] Hub skills: "Use the Read tool..." instruction in body
-- [ ] Hub skills: routing table passes coverage check (file → table) and accuracy check (table → file)
+- [ ] Hub skills: routing table passes coverage check (file → table) and accuracy check (table → file) for all columns (both distilled reference and upstream source if tier 2 exists)
 - [ ] Token budget: `wc -w SKILL.md` under 500 words (body only)
 
 **Deployment:**
