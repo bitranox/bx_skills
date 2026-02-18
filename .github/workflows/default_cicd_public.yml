@@ -10,15 +10,50 @@ on:
     - cron: '17 3 * * *'
 
 jobs:
+  setup:
+    name: Extract Python versions from pyproject.toml
+    runs-on: ubuntu-latest
+    outputs:
+      python-versions: ${{ steps.versions.outputs.python-versions }}
+      python-latest: ${{ steps.versions.outputs.python-latest }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.x"
+      - name: Parse classifiers for Python versions
+        id: versions
+        shell: python
+        run: |
+          import json, os, subprocess, sys
+          try:
+              import rtoml
+          except ModuleNotFoundError:
+              subprocess.check_call([sys.executable, "-m", "pip", "install", "rtoml", "-q"])
+              import rtoml
+          from pathlib import Path
+
+          data = rtoml.load(Path("pyproject.toml"))
+          classifiers = data.get("project", {}).get("classifiers", [])
+          prefix = "Programming Language :: Python :: "
+          versions = [
+              c[len(prefix):]
+              for c in classifiers
+              if c.startswith(prefix) and "." in c[len(prefix):]
+          ]
+          with open(os.environ["GITHUB_OUTPUT"], "a") as fh:
+              fh.write(f"python-versions={json.dumps(versions)}\n")
+              fh.write(f"python-latest={versions[-1]}\n")
+
   test:
     name: Tests (Python ${{ matrix.python }}, ${{ matrix.os }})
+    needs: setup
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        # Test against all supported Python versions (3.10+)
-        python: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+        python: ${{ fromJSON(needs.setup.outputs.python-versions) }}
     env:
       PYO3_USE_ABI3_FORWARD_COMPATIBILITY: "1"
       PYTHONIOENCODING: "utf-8"
@@ -109,7 +144,7 @@ jobs:
           always()
           && steps.pytest.outcome == 'success'
           && matrix.os == 'ubuntu-latest'
-          && matrix.python == '3.13'
+          && matrix.python == needs.setup.outputs.python-latest
         uses: codecov/codecov-action@v5
         with:
           files: ${{ env.COV_REPORT_FILE }}
@@ -234,3 +269,50 @@ jobs:
         continue-on-error: true
         run: uv cache prune --ci
 
+  notebooks:
+    name: Execute notebooks (ubuntu, Python 3.14)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.14"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+          prune-cache: false
+
+      - name: Install notebook runner deps
+        run: |
+          uv pip install --system nbclient nbformat ipykernel jupyter_client
+          python -m ipykernel install --user --name python3 --display-name "Python 3"
+      - name: Execute Quickstart notebook
+        env:
+          PIP_DISABLE_PIP_VERSION_CHECK: "1"
+          PIP_NO_INPUT: "1"
+        run: |
+          python - << 'PY'
+          from pathlib import Path
+
+          import nbformat
+          from nbclient import NotebookClient
+
+          nb_path = Path('notebooks/Quickstart.ipynb')
+          if not nb_path.exists():
+              raise SystemExit(f"Notebook not found: {nb_path}")
+
+          notebook = nbformat.read(nb_path, as_version=4)
+          client = NotebookClient(
+              notebook,
+              timeout=900,
+              kernel_name='python3',
+              allow_errors=False,
+          )
+          client.execute()
+
+          out_path = Path('notebooks/Quickstart-executed.ipynb')
+          nbformat.write(notebook, out_path)
+          print(f"Executed notebook written to: {out_path}")
+          PY
