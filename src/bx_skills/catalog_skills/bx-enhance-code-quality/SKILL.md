@@ -7,14 +7,18 @@ description: Use when asked to rate, score, audit, or improve code quality of a 
 
 ## Overview
 
-Score a project 0-10, identify issues by severity, walk the user through fixes one-by-one, track decisions in CLAUDE.md so declined items are never re-raised.
+Score a project 0-10, identify issues by severity, walk the user through fixes one-by-one, track decisions in the project instructions file so declined items are never re-raised.
+
+> **Project instructions file** depends on your CLI tool:
+> **Claude Code** → `CLAUDE.md` | **Codex** → `AGENTS.md` | **Kilo Code / Windsurf** → equivalent config file.
+> This skill uses "CLAUDE.md" as shorthand — substitute the correct filename for your environment.
 
 **Core principle:** Respect prior decisions. Check before suggesting. Ask before changing.
 
 ## Workflow
 
 ```
-1. Read CLAUDE.md → collect accepted items
+1. Read CLAUDE.md / AGENTS.md → collect accepted items
 2. Run project tools → collect objective data
 3. Score 0-10 with rubric
 4. Filter out accepted items
@@ -27,11 +31,11 @@ Score a project 0-10, identify issues by severity, walk the user through fixes o
                            └── no  → 7. Re-score
 ```
 
-## Step 1: Read CLAUDE.md First
+## Step 1: Read Project Instructions File First
 
-**Before any analysis**, read the **entire** project CLAUDE.md (or equivalent project instructions file).
+**Before any analysis**, read the **entire** project instructions file (CLAUDE.md / AGENTS.md / equivalent).
 
-**If no CLAUDE.md exists:** Note it and proceed to Step 2 with an empty accepted-items list. After scoring, recommend creating a CLAUDE.md as a MEDIUM issue if the project would benefit from one.
+**If no project instructions file exists:** Note it and proceed to Step 2 with an empty accepted-items list. After scoring, recommend creating one as a MEDIUM issue if the project would benefit from it.
 
 Collect deliberately accepted items from **all** of these sources:
 - The `# Code Quality` section (explicit accepted items list)
@@ -49,7 +53,7 @@ Collect deliberately accepted items from **all** of these sources:
 **Before manual scoring**, run whatever quality tooling the project already has. Check for:
 
 - `Makefile` targets: `make test`, `make lint`, or similar
-- CLAUDE.md instructions for test/lint commands
+- Project instructions file (CLAUDE.md / AGENTS.md) for test/lint commands. If not present, create it.
 - Common tools: `ruff check`, `pyright`, `shellcheck`, `eslint`, `pytest`, etc.
 - CI config (`.github/workflows/`) for the project's own quality gates
 
@@ -92,9 +96,9 @@ Present the scorecard as a table with per-dimension scores and the weighted tota
 
 ## Step 4: Filter Deliberately Accepted Items
 
-Cross-reference your findings against **all** deliberately accepted items collected in Step 1 (from the "Code Quality" section AND from inline "by design" documentation throughout CLAUDE.md). Remove any issue that matches.
+Cross-reference your findings against **all** deliberately accepted items collected in Step 1 (from the "Code Quality" section AND from inline "by design" documentation throughout the project instructions file). Remove any issue that matches.
 
-**If unsure whether something is deliberately accepted:** include it but note "This may be intentional per CLAUDE.md — please confirm."
+**If unsure whether something is deliberately accepted:** include it but note "This may be intentional per the project instructions — please confirm."
 
 ## Step 5: Format and Present One-by-One
 
@@ -127,9 +131,9 @@ Wait for the user's response before presenting the next issue.
 
 Implement the change, verify it works (run relevant tests/lints), show the user what changed, move to next issue.
 
-## Step 6b: Save Declined Items to CLAUDE.md
+## Step 6b: Save Declined Items to Project Instructions File
 
-**Mandatory for every decline.** Append to `# Code Quality` section in CLAUDE.md:
+**Mandatory for every decline.** Append to `# Code Quality` section in CLAUDE.md / AGENTS.md:
 
 ```markdown
 Deliberately accepted items — do not flag in future reviews:
@@ -137,7 +141,7 @@ Deliberately accepted items — do not flag in future reviews:
 - **[Short Title]**: [User's reason]. [Brief description so future reviewers understand.]
 ```
 
-If the section exists, append. Do not duplicate entries. If the section does not exist, create it at the end of CLAUDE.md. If no CLAUDE.md exists, create one with the `# Code Quality` section.
+If the section exists, append. Do not duplicate entries. If the section does not exist, create it at the end of the project instructions file. If no project instructions file exists, create one (CLAUDE.md / AGENTS.md) with the `# Code Quality` section.
 
 ## Step 7: Re-score
 
@@ -145,13 +149,13 @@ After all issues processed, re-run the rubric. Present before/after scorecard.
 
 ## Common Mistakes
 
-| Mistake                                            | Fix                                       |
-|----------------------------------------------------|-------------------------------------------|
-| Dump all issues at once                            | Present ONE at a time, wait for response  |
-| Suggest changes to documented-as-intentional items | Read CLAUDE.md first, filter them out     |
-| Vague suggested fixes ("improve this")             | Write specific, actionable instructions   |
-| Skip saving declined items                         | ALWAYS append to CLAUDE.md                |
-| Subjective scoring without rubric                  | Use the weighted rubric table             |
-| Flag items already in "Code Quality" section       | Check the section BEFORE analysis         |
-| Present MINOR issues before SEVERE                 | Sort by severity: SEVERE > MEDIUM > MINOR |
-| Re-raise previously declined items                 | Check CLAUDE.md accepted items list first |
+| Mistake                                            | Fix                                              |
+|----------------------------------------------------|--------------------------------------------------|
+| Dump all issues at once                            | Present ONE at a time, wait for response         |
+| Suggest changes to documented-as-intentional items | Read project instructions first, filter them out |
+| Vague suggested fixes ("improve this")             | Write specific, actionable instructions          |
+| Skip saving declined items                         | ALWAYS append to project instructions file       |
+| Subjective scoring without rubric                  | Use the weighted rubric table                    |
+| Flag items already in "Code Quality" section       | Check the section BEFORE analysis                |
+| Present MINOR issues before SEVERE                 | Sort by severity: SEVERE > MEDIUM > MINOR        |
+| Re-raise previously declined items                 | Check accepted items list first                  |

@@ -16,6 +16,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.7] - 2026-02-19
+
+### Changed
+
+- **bx-enhance-code-quality**: All references to `CLAUDE.md` updated to be multi-platform.
+  Added mapping note (Claude Code → `CLAUDE.md`, Codex → `AGENTS.md`, Kilo Code / Windsurf →
+  equivalent) and replaced bare `CLAUDE.md` mentions with "project instructions file" or
+  `CLAUDE.md / AGENTS.md` throughout.
+- **bx-skill-writer**: Updated `CLAUDE.md` reference in "Don't create for" section to
+  include `AGENTS.md` as alternative.
+
 ## [1.2.6] - 2026-02-19
 
 ### Changed
