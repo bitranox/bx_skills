@@ -312,13 +312,28 @@ def get_active_targets(
     targets: list[CLITarget],
     scopes: list[Scope],
 ) -> list[tuple[CLITarget, Scope]]:
-    """Return valid (target, scope) pairs, filtering project_only from USER."""
+    """Return valid (target, scope) pairs, filtering invalid combinations.
+
+    Filters:
+    - USER scope for project_only targets (e.g. Windsurf).
+    - USER scope when user_path_tpl is empty.
+    - PROJECT scope when CWD is the home directory and the project template
+      matches the user template (paths would resolve identically).
+    """
+    cwd_is_home = Path.cwd() == Path.home()
     pairs: list[tuple[CLITarget, Scope]] = []
     for target in targets:
         for scope in scopes:
             if scope == Scope.USER and target.project_only:
                 continue
             if scope == Scope.USER and not target.user_path_tpl:
+                continue
+            if (
+                scope == Scope.PROJECT
+                and cwd_is_home
+                and target.user_path_tpl
+                and target.user_path_tpl == target.project_path_tpl
+            ):
                 continue
             pairs.append((target, scope))
     return pairs

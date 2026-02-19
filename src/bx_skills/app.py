@@ -34,6 +34,7 @@ from bx_skills.core import (
     build_plans,
     check_installed,
     discover_skills,
+    get_active_targets,
     install_skill,
     uninstall_skill,
 )
@@ -323,6 +324,7 @@ class SkillsScreen(InstallerScreen):
         self._installed_at: dict[tuple[str, Scope], bool] = {}
         self._skill_order: list[str] = []
         self._user_col_active: bool = True
+        self._project_col_active: bool = True
 
     def compose(self) -> ComposeResult:
         yield Static("Select Skills", classes="screen-title")
@@ -337,7 +339,9 @@ class SkillsScreen(InstallerScreen):
     def on_mount(self) -> None:
         skills: list[SkillInfo] = self.installer.skills
         targets: list[CLITarget] = self.installer.selected_targets
-        self._user_col_active = not all(t.project_only for t in targets)
+        active_pairs = get_active_targets(targets, [Scope.USER, Scope.PROJECT])
+        self._user_col_active = any(s == Scope.USER for _, s in active_pairs)
+        self._project_col_active = any(s == Scope.PROJECT for _, s in active_pairs)
 
         table = self.query_one("#skills-table", DataTable)
         table.add_column("Skill", key="skill", width=32)
@@ -352,7 +356,10 @@ class SkillsScreen(InstallerScreen):
                     check_installed(skill, t, scope) for t in targets if not (scope == Scope.USER and t.project_only)
                 )
                 self._installed_at[(skill.dir_name, scope)] = installed
-                if scope == Scope.USER and not self._user_col_active:
+                col_inactive = (scope == Scope.USER and not self._user_col_active) or (
+                    scope == Scope.PROJECT and not self._project_col_active
+                )
+                if col_inactive:
                     self._states[(skill.dir_name, scope)] = CellState.SKIP
                 elif installed:
                     self._states[(skill.dir_name, scope)] = CellState.SELECT
@@ -372,6 +379,8 @@ class SkillsScreen(InstallerScreen):
         """Return styled Rich Text for a cell based on its state."""
         if scope == Scope.USER and not self._user_col_active:
             return Text("\u00b7", style="dim", justify="center")
+        if scope == Scope.PROJECT and not self._project_col_active:
+            return Text("\u00b7", style="dim", justify="center")
         state = self._states.get((dir_name, scope), CellState.SKIP)
         if state == CellState.SELECT:
             return Text("X", style="bold green", justify="center")
@@ -390,6 +399,8 @@ class SkillsScreen(InstallerScreen):
             return
         scope = Scope.USER if col == 1 else Scope.PROJECT
         if scope == Scope.USER and not self._user_col_active:
+            return
+        if scope == Scope.PROJECT and not self._project_col_active:
             return
         row = coord.row
         if row >= len(self._skill_order):
@@ -451,6 +462,8 @@ class SkillsScreen(InstallerScreen):
             for scope, col_key in _SCOPE_COLUMNS:
                 if scope == Scope.USER and not self._user_col_active:
                     continue
+                if scope == Scope.PROJECT and not self._project_col_active:
+                    continue
                 self._states[(dn, scope)] = CellState.SELECT
                 table.update_cell(dn, col_key, self._render_cell(dn, scope))
 
@@ -459,6 +472,8 @@ class SkillsScreen(InstallerScreen):
         for dn in self._skill_order:
             for scope, col_key in _SCOPE_COLUMNS:
                 if scope == Scope.USER and not self._user_col_active:
+                    continue
+                if scope == Scope.PROJECT and not self._project_col_active:
                     continue
                 installed = self._installed_at.get((dn, scope), False)
                 self._states[(dn, scope)] = CellState.KEEP if installed else CellState.SKIP

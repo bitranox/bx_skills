@@ -40,7 +40,7 @@ def test_empty_user_path_excluded_from_user_scope() -> None:
     assert pairs == []
 
 
-def test_both_scopes_produce_two_pairs(sample_target: CLITarget) -> None:
+def test_both_scopes_produce_two_pairs(sample_target: CLITarget, fake_home: Path, fake_cwd: Path) -> None:
     pairs = get_active_targets([sample_target], [Scope.USER, Scope.PROJECT])
     assert len(pairs) == 2
     scopes = [s for _, s in pairs]
@@ -60,6 +60,67 @@ def test_project_only_in_project_scope_included(project_only_target: CLITarget) 
     pairs = get_active_targets([project_only_target], [Scope.PROJECT])
     assert len(pairs) == 1
     assert pairs[0] == (project_only_target, Scope.PROJECT)
+
+
+# ── get_active_targets: CWD == HOME guard ────────────────────────────────────
+
+
+def test_project_scope_excluded_when_cwd_is_home(
+    sample_target: CLITarget, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """When CWD == HOME and templates match, PROJECT scope is redundant."""
+    home = tmp_path / "same"
+    home.mkdir()
+    monkeypatch.setattr(Path, "home", staticmethod(lambda: home))
+    monkeypatch.setattr(Path, "cwd", staticmethod(lambda: home))
+
+    pairs = get_active_targets([sample_target], [Scope.USER, Scope.PROJECT])
+    scopes = [s for _, s in pairs]
+    assert Scope.USER in scopes
+    assert Scope.PROJECT not in scopes
+
+
+def test_project_scope_included_when_cwd_is_not_home(sample_target: CLITarget, fake_home: Path, fake_cwd: Path) -> None:
+    """When CWD != HOME, both scopes are valid."""
+    pairs = get_active_targets([sample_target], [Scope.USER, Scope.PROJECT])
+    scopes = [s for _, s in pairs]
+    assert Scope.USER in scopes
+    assert Scope.PROJECT in scopes
+
+
+def test_project_only_target_kept_when_cwd_is_home(
+    project_only_target: CLITarget, monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    """project_only targets (e.g. Windsurf) keep PROJECT even when CWD == HOME."""
+    home = tmp_path / "same"
+    home.mkdir()
+    monkeypatch.setattr(Path, "home", staticmethod(lambda: home))
+    monkeypatch.setattr(Path, "cwd", staticmethod(lambda: home))
+
+    pairs = get_active_targets([project_only_target], [Scope.PROJECT])
+    assert len(pairs) == 1
+    assert pairs[0] == (project_only_target, Scope.PROJECT)
+
+
+def test_mixed_targets_cwd_is_home(
+    sample_target: CLITarget,
+    project_only_target: CLITarget,
+    monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path,
+) -> None:
+    """With mixed targets and CWD == HOME: normal target loses PROJECT, project_only keeps it."""
+    home = tmp_path / "same"
+    home.mkdir()
+    monkeypatch.setattr(Path, "home", staticmethod(lambda: home))
+    monkeypatch.setattr(Path, "cwd", staticmethod(lambda: home))
+
+    pairs = get_active_targets([sample_target, project_only_target], [Scope.USER, Scope.PROJECT])
+    # sample_target: only USER (PROJECT filtered)
+    # project_only_target: only PROJECT (USER filtered by project_only)
+    assert (sample_target, Scope.USER) in pairs
+    assert (sample_target, Scope.PROJECT) not in pairs
+    assert (project_only_target, Scope.PROJECT) in pairs
+    assert (project_only_target, Scope.USER) not in pairs
 
 
 # ── build_plans ──────────────────────────────────────────────────────────────

@@ -16,6 +16,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.5] - 2026-02-19
+
+### Fixed
+
+- **core/TUI/CLI**: When the current working directory is the user's home directory,
+  project-scope skills resolved to the same path as user-scope skills. Uninstalling
+  "project" skills in this situation would accidentally delete user skills.
+  `get_active_targets()` now filters out redundant project-scope pairs when CWD equals
+  HOME and path templates match. The TUI hides the project column in this case.
+
 ## [1.2.4] - 2026-02-19
 
 ### Fixed
