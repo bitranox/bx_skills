@@ -16,6 +16,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.6] - 2026-02-19
+
+### Changed
+
+- **bx-humanize-en / bx-humanise-de**: Added scope guard instruction — humanizing
+  is now restricted to prose content (blog posts, emails, articles, etc.) and explicitly
+  excluded from code, docstrings, API docs, changelogs, and other technical artifacts.
+  The skill now asks the user for confirmation before applying changes.
+
 ## [1.2.5] - 2026-02-19
 
 ### Fixed
