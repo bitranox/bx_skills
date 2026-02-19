@@ -11,6 +11,8 @@ description: Use when creating new skills, editing existing skills, structuring 
 
 **Personal skills live in agent-specific directories (`~/.claude/skills` for Claude Code, `~/.agents/skills/` for Codex)** 
 
+**if there is a skill in the current directory, work on THAT skill, not `~/.claude/skills` or `~/.agents/skills/`**
+
 You write test cases (pressure scenarios with subagents), watch them fail (baseline behavior), write the skill (documentation), watch tests pass (agents comply), and refactor (close loopholes).
 
 **Core principle:** If you didn't watch an agent fail without the skill, you don't know if the skill teaches the right thing.

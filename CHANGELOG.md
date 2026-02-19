@@ -16,6 +16,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] - 2026-02-19
+
+### Added
+
+- **bx-humanize-en**: Extended from 24 to 35 AI writing detection patterns based on the February 2026
+  revision of Wikipedia's "Signs of AI writing". New sections include: unusual tables, subject lines,
+  skipping heading levels, section summaries, phrasal templates, prompt refusal artifacts, markdown
+  artifacts, ChatGPT search reference artifacts, UTM source parameters, sudden style shifts, and
+  verbose edit summaries. Expanded word lists and added key research citations.
+- **bx-humanise-de**: Complete rewrite based on the German Wikipedia page "Anzeichen für
+  KI-generierte Inhalte". Now 30 pattern sections with proper German umlauts, German-specific
+  word lists, real examples from deleted German Wikipedia articles, and new German-specific patterns
+  including ChatGPT-typischer Sound, anglizistische Konstruktionen, and Markdown-Artefakte.
+
+### Changed
+
+- **bx-skill-writer**: Added clarification to work on skills in the current directory first.
+
 ## [1.1.1] - 2026-02-19
 
 ### Fixed
