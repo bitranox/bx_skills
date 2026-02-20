@@ -240,7 +240,10 @@ Avoiding AI patterns is only half the job. Sterile, voiceless writing is just as
 
 ### 13. Em Dash Overuse
 
-**Problem:** LLMs use em dashes (--) more than humans, mimicking "punched up" sales-like writing by over-emphasizing clauses or parallelisms. Most useful when combined with other indicators. May be less common in newer AI text (late 2025 onwards).
+**Problem:** LLMs use em dashes ("—") and EN Dashes ("–") more than humans, mimicking "punched up" sales-like writing by over-emphasizing clauses or 
+parallelisms. 
+Most useful when combined with other indicators. May be less common in newer AI text (late 2025 onwards). Remove those completely or if neccessary replace 
+them with Hyphens "-"
 
 **Before:**
 > The term is primarily promoted by Dutch institutions--not by the people themselves. You don't say "Netherlands, Europe" as an address--yet this mislabeling continues--even in official documents.

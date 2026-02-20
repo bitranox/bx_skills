@@ -26,7 +26,7 @@ name = "bx-skills"
 #: Human-readable summary shown in CLI help output.
 title = "CLI & TUI for installing AI coding assistant skills"
 #: Current release version pulled from ``pyproject.toml`` by automation.
-version = "1.2.7"
+version = "1.2.8"
 #: Repository homepage presented to users.
 homepage = "https://github.com/bitranox/bx_skills"
 #: Author attribution surfaced in CLI output.

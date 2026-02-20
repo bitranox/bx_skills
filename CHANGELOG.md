@@ -16,6 +16,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.8] - 2026-02-20
+
+### Fixed
+
+- **CI/CD**: Skip ruff cache save/restore actions on self-hosted runners (they use
+  persistent volume mounts instead of GitHub Actions cache).
+
+### Changed
+
+- **bx-humanize-en / bx-humanise-de**: Updated em dash and en dash handling rules —
+  skills now instruct to remove em dashes and en dashes completely, replacing with
+  hyphens where necessary.
+- **Dependencies**: Bumped minimum ruff version from 0.15.1 to 0.15.2.
+
 ## [1.2.7] - 2026-02-19
 
 ### Changed

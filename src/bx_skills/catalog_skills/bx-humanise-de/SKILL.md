@@ -273,7 +273,9 @@ KI-Muster zu vermeiden ist nur die halbe Arbeit. Steriler, stimmloser Text ist g
 
 ### 15. Übermäßige Verwendung von Gedankenstrichen
 
-**Problem:** Im Deutschen werden Gedankenstriche traditionell seltener verwendet als im Englischen. Deutsche Texte bevorzugen Kommas, Klammern oder Doppelpunkte. LLM-generierte deutsche Texte verwenden häufig anglizistische Gedankenstrich-Konstruktionen. Für sich allein kein starker Indikator, aber in Kombination mit anderen Mustern auffällig.
+**Problem:** Im Deutschen werden Gedankenstriche traditionell seltener verwendet als im Englischen. Deutsche Texte bevorzugen Kommas, Klammern oder Doppelpunkte. 
+LLM-generierte deutsche Texte verwenden häufig anglizistische Gedankenstrich-Konstruktionen. Für sich allein kein starker Indikator, aber in Kombination mit anderen Mustern auffällig.
+Entferne EM-Dashes ("—"), En Dashes ("–") komplett und ersetze diese wenn nötig mit Hyphens ("-")
 
 **Vorher:**
 > Der Begriff wird hauptsächlich von niederländischen Institutionen beworben - nicht von den Menschen selbst. Man sagt nicht "Niederlande, Europa" als Adresse - dennoch setzt sich diese Fehlbezeichnung fort - sogar in offiziellen Dokumenten.
