@@ -1,6 +1,6 @@
 [project]
 name = "bx-skills"
-version = "1.2.10"
+version = "1.2.11"
 description = "TUI for installing AI coding assistant skills"
 requires-python = ">=3.10"
 dependencies = ["textual>=8.0.2", "rich-click>=1.9.7"]

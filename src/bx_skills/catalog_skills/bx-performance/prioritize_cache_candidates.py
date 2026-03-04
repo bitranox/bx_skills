@@ -1,4 +1,5 @@
 import re
+import sys
 
 def parse_candidates(candidate_file):
     """Parse cache candidates file."""
@@ -34,8 +35,11 @@ def prioritize(candidates, hotspots):
     return priority
 
 if __name__ == '__main__':
-    candidates = parse_candidates('LLM-CONTEXT/review-anal/cache/cache_candidates.txt')
-    hotspots = parse_hotspots('LLM-CONTEXT/review-anal/cache/hotspots.txt')
+    if len(sys.argv) < 3:
+        print("Usage: prioritize_cache_candidates.py <candidates.txt> <hotspots.txt>", file=sys.stderr)
+        sys.exit(1)
+    candidates = parse_candidates(sys.argv[1])
+    hotspots = parse_hotspots(sys.argv[2])
 
     priority = prioritize(candidates, hotspots)
 

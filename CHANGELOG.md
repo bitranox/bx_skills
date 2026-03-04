@@ -16,6 +16,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.11] - 2026-03-04
+
+### Changed
+
+- **catalog/bx-performance**: Rewrote SKILL.md workflow — added step-by-step interactive
+  presentation (one issue at a time), existing cache auditing, project instructions integration
+  for tracking accepted/declined findings, and severity-based sorting.
+- **catalog/bx-performance**: `find_hotspots.py` and `prioritize_cache_candidates.py` now
+  require explicit CLI arguments instead of hardcoded paths, improving reusability.
+- **docs**: Updated README.md with documentation improvements.
+
 ## [1.2.10] - 2026-03-04
 
 ### Fixed

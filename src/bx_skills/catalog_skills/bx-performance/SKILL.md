@@ -26,17 +26,7 @@ Your approach:
 
 ## Purpose
 
-Systematically identify performance issues — caching opportunities, uncompiled regex, hot spots — and validate with real test suite profiling.
-
-## Responsibilities
-
-1. Identify pure functions (deterministic, no side effects)
-2. Find expensive computations (parsing, calculations, transformations)
-3. Find uncompiled regex patterns (re.match/search/findall with string literals)
-4. Cross-reference with profiling data to find frequently-called functions
-5. Profile EACH candidate with real test suite
-6. Measure cache hit rate and performance gain
-7. Recommend caching only if hit rate >20% AND improvement >5%
+Systematically identify performance issues — caching opportunities, uncompiled regex, hot spots — and validate with real test suite profiling. Present findings one-by-one, implement accepted fixes directly, and save declined items as documented false positives in the project instructions file.
 
 ## Reference Files
 
@@ -50,36 +40,84 @@ Use the Read tool to load referenced files for full details.
 | Cache profiling template      | profile_with_cache_template.py | Before/after profiling with lru_cache monkey-patch        |
 | Uncompiled regex finder (AST) | find_uncompiled_regex.py       | Flag re.match/search/findall with string literal patterns |
 
+## Workflow
+
+```
+Step 1 (Read instructions) → Step 2 (Setup) → Step 3 (Profile) →
+Step 4 (Analyze: candidates + regex + hotspots + prioritize + audit existing caches) →
+Step 5 (Merge & sort) → Step 6 (Present one-by-one) →
+  ├─ Implement fix / remove ineffective cache + run tests
+  └─ Save decline to instructions
+  └─ Step 7 (Final verification)
+```
+
 ## Execution Steps
 
-### Setup
+### Step 1: Read Project Instructions
+
+Before any analysis, read the project's CLAUDE.md or AGENTS.md and look for a `# Performance` section.
+
+Collect all **previously reviewed items** — both fixes already implemented and findings the user declined (documented false positives). Each entry contains:
+- Short title
+- File path and function name
+- Reason (why it was fixed, or why it was declined)
+
+Also scan codebase for inline comments containing "by design", "intentional", or "performance: accepted".
+
+All previously reviewed items are **OFF-LIMITS** — skip them silently during presentation in Step 6. Never re-suggest an already-implemented fix. Never re-raise a previously declined finding.
+
+### Step 2: Setup
 
 ```bash
-# Ensure we're in project root
-if [ -f "LLM-CONTEXT/review-anal/python_path.txt" ]; then
-    PROJECT_ROOT=$(pwd)
-elif git rev-parse --show-toplevel &>/dev/null; then
-    PROJECT_ROOT=$(git rev-parse --show-toplevel)
-    cd "$PROJECT_ROOT" || exit 1
-else
-    PROJECT_ROOT=$(pwd)
+# Create temp directory for all scratch files
+BX_PERF_TMPDIR=$(mktemp -d /tmp/bx-perf-XXXXXX)
+echo "$BX_PERF_TMPDIR" > /tmp/bx-perf-session
+
+# Validate we're in a Python project (walk upward looking for pyproject.toml)
+found_project=false
+check_dir="$(pwd)"
+while [ "$check_dir" != "/" ]; do
+    if [ -f "$check_dir/pyproject.toml" ]; then
+        found_project=true
+        PROJECT_ROOT="$check_dir"
+        break
+    fi
+    check_dir="$(dirname "$check_dir")"
+done
+
+if [ "$found_project" = false ]; then
+    echo "ERROR: No pyproject.toml found in any parent directory. Not a Python project."
+    exit 1
 fi
+
+cd "$PROJECT_ROOT" || exit 1
 echo "Working directory: $PROJECT_ROOT"
 
-mkdir -p LLM-CONTEXT/review-anal/cache
-mkdir -p LLM-CONTEXT/review-anal/logs
-mkdir -p LLM-CONTEXT/review-anal/scripts
+# Resolve SKILL_DIR: env var > project-local > user-level
+if [ -z "${SKILL_DIR:-}" ]; then
+    if [ -d "$PROJECT_ROOT/.claude/skills/bx-performance" ]; then
+        SKILL_DIR="$PROJECT_ROOT/.claude/skills/bx-performance"
+    elif [ -d "$HOME/.claude/skills/bx-performance" ]; then
+        SKILL_DIR="$HOME/.claude/skills/bx-performance"
+    else
+        echo "ERROR: bx-performance skill not found in project or user directory"
+        exit 1
+    fi
+fi
+echo "$SKILL_DIR" > /tmp/bx-perf-skill-dir
 
-# Standalone Python validation
-if [ -f "LLM-CONTEXT/review-anal/python_path.txt" ]; then
-    PYTHON_CMD=$(cat LLM-CONTEXT/review-anal/python_path.txt)
+mkdir -p "$BX_PERF_TMPDIR"/{cache,logs,perf}
+
+# Python validation
+if [ -n "${BX_PERF_PYTHON:-}" ]; then
+    PYTHON_CMD="$BX_PERF_PYTHON"
     if ! command -v "$PYTHON_CMD" &> /dev/null; then
         echo "ERROR: Python interpreter not found: $PYTHON_CMD"
         exit 1
     fi
     PYTHON_VERSION=$($PYTHON_CMD --version 2>&1)
     if echo "$PYTHON_VERSION" | grep -qE "Python 3\.(13|[2-9][0-9])"; then
-        echo "Using orchestrator Python: $PYTHON_CMD ($PYTHON_VERSION)"
+        echo "Using BX_PERF_PYTHON: $PYTHON_CMD ($PYTHON_VERSION)"
     else
         echo "ERROR: Python version mismatch. Expected 3.13+, got: $PYTHON_VERSION"
         exit 1
@@ -103,7 +141,7 @@ else
 fi
 
 # Initialize status tracking
-echo "IN_PROGRESS" > LLM-CONTEXT/review-anal/cache/status.txt
+echo "IN_PROGRESS" > "$BX_PERF_TMPDIR/cache/status.txt"
 
 set -e
 trap 'handle_error $? $LINENO' ERR
@@ -111,269 +149,267 @@ trap 'handle_error $? $LINENO' ERR
 handle_error() {
     local exit_code=$1
     local line_num=$2
-    echo "FAILED" > LLM-CONTEXT/review-anal/cache/status.txt
+    echo "FAILED" > "$BX_PERF_TMPDIR/cache/status.txt"
     echo "Performance analysis failed - check logs for details"
-    cat > LLM-CONTEXT/review-anal/cache/ERROR.txt << EOF
+    cat > "$BX_PERF_TMPDIR/cache/ERROR.txt" << EOF
 Error occurred in Performance subagent
 Exit code: $exit_code
 Failed at line: $line_num
 Time: $(date -Iseconds)
-Check log file: LLM-CONTEXT/review-anal/logs/cache.log
+Check log file: $BX_PERF_TMPDIR/logs/cache.log
 EOF
     exit $exit_code
 }
 ```
 
-### Step 0.5: Validate Prerequisites and Profile
+### Step 3: Validate Prerequisites and Profile
 
 ```bash
+BX_PERF_TMPDIR="$(cat /tmp/bx-perf-session 2>/dev/null)"
+SKILL_DIR="$(cat /tmp/bx-perf-skill-dir 2>/dev/null)"
+
 echo "Validating prerequisites..."
-$PYTHON_CMD -m pip install --user pytest 2>&1 | tee LLM-CONTEXT/review-anal/cache/pytest_install.txt || true
+$PYTHON_CMD -m pip install --user pytest 2>&1 | tee "$BX_PERF_TMPDIR/cache/pytest_install.txt" || true
 
-# Profile with pytest directly
-if [ ! -f "LLM-CONTEXT/review-anal/perf/test_profile.prof" ]; then
-    echo "WARNING: test_profile.prof not found - running profiling..."
-    $PYTHON_CMD -m cProfile -o LLM-CONTEXT/review-anal/perf/test_profile.prof -m pytest tests/ -v 2>&1 | tee LLM-CONTEXT/review-anal/cache/pytest_profiling.txt || true
+# Profile unit tests
+if [ ! -f "$BX_PERF_TMPDIR/perf/test_profile.prof" ]; then
+    echo "Profiling unit tests..."
+    $PYTHON_CMD -m cProfile -o "$BX_PERF_TMPDIR/perf/test_profile.prof" -m pytest tests/ -v 2>&1 | tee "$BX_PERF_TMPDIR/cache/pytest_profiling.txt" || true
 fi
 
-# Profile with make test if Makefile available
-if [ -f "Makefile" ] && grep -q '^test' Makefile; then
-    echo "Profiling with 'make test'..."
-    time make test 2>&1 | tee LLM-CONTEXT/review-anal/cache/make_test_profiling.txt || true
-    echo "make test profiling complete"
-fi
+# Profile local-only tests (if marker exists)
+echo "Profiling local_only tests..."
+$PYTHON_CMD -m cProfile -o "$BX_PERF_TMPDIR/perf/test_local_only.prof" -m pytest tests/ -v -m local_only 2>&1 | tee "$BX_PERF_TMPDIR/cache/pytest_local_only_profiling.txt" || true
 
-# Profile with make integrationtest if available
-if [ -f "Makefile" ] && grep -qE '^integrationtest' Makefile; then
-    echo "Profiling with 'make integrationtest'..."
-    time make integrationtest 2>&1 | tee LLM-CONTEXT/review-anal/cache/make_integrationtest_profiling.txt || true
-    echo "make integrationtest profiling complete"
-fi
+# Profile integration tests (if marker exists)
+echo "Profiling integrationtest tests..."
+$PYTHON_CMD -m cProfile -o "$BX_PERF_TMPDIR/perf/test_integration.prof" -m pytest tests/ -v -m integrationtest 2>&1 | tee "$BX_PERF_TMPDIR/cache/pytest_integration_profiling.txt" || true
 
 echo "Prerequisites validated"
 ```
 
-### Step 1: Identify Pure Function Candidates
+### Step 4: Run Analysis Pipeline
 
-Deploy `find_cache_candidates.py` from the skill directory, then run it against the project's Python files:
+#### 4a: Identify Pure Function Candidates
+
+Run `find_cache_candidates.py` from the skill directory against the project's Python files:
 
 ```bash
-# Copy the tool from installed skill directory
-SKILL_DIR="$(dirname "$(readlink -f "$0")" 2>/dev/null || echo "$HOME/.claude/skills/bx-performance")"
-cp "$SKILL_DIR/find_cache_candidates.py" LLM-CONTEXT/review-anal/cache/
+BX_PERF_TMPDIR="$(cat /tmp/bx-perf-session 2>/dev/null)"
+SKILL_DIR="$(cat /tmp/bx-perf-skill-dir 2>/dev/null)"
 
-python_files=$(grep -E '\.py$' LLM-CONTEXT/review-anal/files_to_review.txt || true)
+# Discover Python files
+if [ -n "${BX_PERF_FILES:-}" ]; then
+    python_files="$BX_PERF_FILES"
+elif [ -d "src" ]; then
+    python_files=$(find src/ -name '*.py' | tr '\n' ' ')
+else
+    python_files=$(find . -name '*.py' -not -path './.venv/*' -not -path './venv/*' | tr '\n' ' ')
+fi
+
 if [ -n "$python_files" ]; then
-    $PYTHON_CMD LLM-CONTEXT/review-anal/cache/find_cache_candidates.py $python_files > LLM-CONTEXT/review-anal/cache/cache_candidates.txt 2>&1 || true
+    $PYTHON_CMD "$SKILL_DIR/find_cache_candidates.py" $python_files > "$BX_PERF_TMPDIR/cache/cache_candidates.txt" 2>&1 || true
     echo "Cache candidates identified"
 fi
 ```
 
-### Step 2: Find Uncompiled Regex Patterns
+#### 4b: Find Uncompiled Regex Patterns
 
-Deploy `find_uncompiled_regex.py` and scan for `re.match()`, `re.search()`, `re.findall()`, etc. called with string literal patterns instead of pre-compiled objects:
+Run `find_uncompiled_regex.py` and scan for `re.match()`, `re.search()`, `re.findall()`, etc. called with string literal patterns instead of pre-compiled objects:
 
 ```bash
-cp "$SKILL_DIR/find_uncompiled_regex.py" LLM-CONTEXT/review-anal/cache/
+BX_PERF_TMPDIR="$(cat /tmp/bx-perf-session 2>/dev/null)"
+SKILL_DIR="$(cat /tmp/bx-perf-skill-dir 2>/dev/null)"
 
-python_files=$(grep -E '\.py$' LLM-CONTEXT/review-anal/files_to_review.txt || true)
+# Discover Python files
+if [ -n "${BX_PERF_FILES:-}" ]; then
+    python_files="$BX_PERF_FILES"
+elif [ -d "src" ]; then
+    python_files=$(find src/ -name '*.py' | tr '\n' ' ')
+else
+    python_files=$(find . -name '*.py' -not -path './.venv/*' -not -path './venv/*' | tr '\n' ' ')
+fi
+
 if [ -n "$python_files" ]; then
-    $PYTHON_CMD LLM-CONTEXT/review-anal/cache/find_uncompiled_regex.py $python_files > LLM-CONTEXT/review-anal/cache/uncompiled_regex.txt 2>&1 || true
+    $PYTHON_CMD "$SKILL_DIR/find_uncompiled_regex.py" $python_files > "$BX_PERF_TMPDIR/cache/uncompiled_regex.txt" 2>&1 || true
     echo "Uncompiled regex scan complete"
 fi
 ```
 
 Every `re.match(r'...', ...)` inside a function body should become a module-level `_RE = re.compile(r'...')` with `_RE.match(...)` at the call site. This avoids recompilation on every call.
 
-### Step 3: Profile to Find Hot Functions
+#### 4c: Profile to Find Hot Functions
 
-Deploy `find_hotspots.py` and analyze profiling data:
+Run `find_hotspots.py` from the skill directory and analyze profiling data:
 
 ```bash
-cp "$SKILL_DIR/find_hotspots.py" LLM-CONTEXT/review-anal/cache/
+BX_PERF_TMPDIR="$(cat /tmp/bx-perf-session 2>/dev/null)"
+SKILL_DIR="$(cat /tmp/bx-perf-skill-dir 2>/dev/null)"
 
-if [ ! -f "LLM-CONTEXT/review-anal/perf/test_profile.prof" ]; then
-    $PYTHON_CMD -m cProfile -o LLM-CONTEXT/review-anal/perf/test_profile.prof -m pytest tests/ -v 2>&1 | tee LLM-CONTEXT/review-anal/cache/pytest_cache_profiling.txt || true
-fi
-
-$PYTHON_CMD LLM-CONTEXT/review-anal/cache/find_hotspots.py LLM-CONTEXT/review-anal/perf/test_profile.prof > LLM-CONTEXT/review-anal/cache/hotspots.txt 2>&1 || true
+# Analyze hotspots from all available profile files
+> "$BX_PERF_TMPDIR/cache/hotspots.txt"
+for prof_file in "$BX_PERF_TMPDIR/perf/"*.prof; do
+    if [ -f "$prof_file" ]; then
+        echo "--- $(basename "$prof_file") ---" >> "$BX_PERF_TMPDIR/cache/hotspots.txt"
+        $PYTHON_CMD "$SKILL_DIR/find_hotspots.py" "$prof_file" >> "$BX_PERF_TMPDIR/cache/hotspots.txt" 2>&1 || true
+    fi
+done
 echo "Hot spots identified"
 ```
 
-### Step 4: Cross-Reference Candidates with Hot Spots
+#### 4d: Cross-Reference Candidates with Hot Spots
 
-Deploy `prioritize_cache_candidates.py`:
+Run `prioritize_cache_candidates.py` from the skill directory:
 
 ```bash
-cp "$SKILL_DIR/prioritize_cache_candidates.py" LLM-CONTEXT/review-anal/cache/
+BX_PERF_TMPDIR="$(cat /tmp/bx-perf-session 2>/dev/null)"
+SKILL_DIR="$(cat /tmp/bx-perf-skill-dir 2>/dev/null)"
 
-$PYTHON_CMD LLM-CONTEXT/review-anal/cache/prioritize_cache_candidates.py > LLM-CONTEXT/review-anal/cache/priority_cache_candidates.txt 2>&1 || true
+$PYTHON_CMD "$SKILL_DIR/prioritize_cache_candidates.py" "$BX_PERF_TMPDIR/cache/cache_candidates.txt" "$BX_PERF_TMPDIR/cache/hotspots.txt" > "$BX_PERF_TMPDIR/cache/priority_cache_candidates.txt" 2>&1 || true
 echo "Priority candidates identified"
 ```
 
-### Step 5: Profile Each Candidate with Caching
+#### 4e: Audit Existing Caches
 
-Deploy `profile_with_cache_template.py` for individual profiling:
+This is an instructions-only step (no script). Use the Grep tool to find existing cache decorators:
+
+- Search pattern: `@lru_cache|@cache|@functools\.lru_cache|@functools\.cache`
+- Exclude `.venv/`, `venv/`, `__pycache__/`
+
+For each cached function found, read the function and evaluate:
+
+1. Check profiling data from `hotspots.txt` — is the function called frequently (>100 calls)?
+2. Read the function body — is it pure (no I/O, no side effects, deterministic)?
+3. Check the function signature — are all args hashable (no mutable defaults leaking through)?
+4. Cross-reference with hotspots — does caching this function actually save measurable time?
+
+Manually write findings to `$BX_PERF_TMPDIR/cache/existing_caches.txt` with this format:
+```
+file:line - @decorator function_name()
+Calls: N, Cumtime: Xs
+Verdict: EFFECTIVE | INEFFECTIVE | HARMFUL
+Reason: ...
+```
+
+Verdicts:
+- **EFFECTIVE**: High call count, measurable time savings — keep (not presented in Step 6, but reported in Step 7 summary)
+- **INEFFECTIVE**: Low call count (<100), negligible cumtime, or cache hit rate <20% — propose removal
+- **HARMFUL**: Caches impure function, mutable args without conversion, or masks a bug — propose removal with explanation
+
+### Step 5: Merge, Classify, and Sort Findings
+
+Parse the five output files from Step 4. Output format reference:
+
+- `cache_candidates.txt`: `file:line - function()` + `Reason: ...`
+- `uncompiled_regex.txt`: `file:line - re.func(pattern, ...)` + `Fix: ...`
+- `hotspots.txt`: `file:line - function()` + `Calls: N, Cumtime: Xs`
+- `priority_cache_candidates.txt`: `file:line - function()`
+- `existing_caches.txt`: `file:line - @decorator function_name()` + `Verdict: ...`
+
+Classify each finding by severity:
+
+- **SEVERE**: Uncompiled regex in a hot function (in both regex + hotspots) OR harmful existing cache
+- **MEDIUM**: Priority cache candidate (confirmed by profiling) OR uncompiled regex in non-hot function OR ineffective existing cache
+- **MINOR**: Cache candidate NOT confirmed by profiling
+
+Filter out all accepted items collected in Step 1. Sort findings SEVERE → MEDIUM → MINOR.
+
+### Step 6: Present and Implement Findings
+
+Present each finding **ONE AT A TIME** using this format:
+
+```
+## Issue N: [Short Title]
+**Severity**: SEVERE | MEDIUM | MINOR
+**Type**: Uncompiled Regex | Cache Candidate | Ineffective Cache
+**File**: file:line
+**Function**: function_name
+**Call count**: N (from profiling, if available)
+**Description**: what the issue is (for Ineffective Cache: include the verdict reason — actual call count, cumtime, impurity details, or why the cache provides no benefit)
+**Suggested fix**: specific code change
+```
+
+Ask: "Implement this fix? Or skip? If skipping, what's the reason?"
+
+Wait for the user's response before proceeding to the next finding.
+
+**On accept — Uncompiled Regex:**
+1. Add `_RE_NAME = re.compile(r'...')` at module level (after imports)
+2. Replace `re.func(r'...', text)` → `_RE_NAME.func(text)` at the call site
+3. Run tests, show diff
+
+**On accept — Cache Candidate:**
+1. Add `from functools import lru_cache` if missing
+2. Add `@lru_cache` decorator above function
+3. If mutable args (list/dict), convert to tuples or use wrapper
+4. Run tests, show diff
+
+**On accept — Ineffective Cache (removal):**
+1. Remove `@lru_cache` / `@cache` decorator from the function
+2. Remove `from functools import lru_cache` / `cache` if no longer used
+3. If mutable-arg wrappers were added only for caching, remove those too
+4. Run tests, show diff
+
+**On decline:**
+Append to the `# Performance` section in the project's CLAUDE.md or AGENTS.md:
+
+```
+- **[Title]**: [user's reason]. [file:line, function_name]
+```
+
+Create the section or file if it does not exist. Never duplicate entries.
+
+### Step 7: Final Verification
+
+Run the full test suite. Report pass/fail. Summarize effective existing caches that were kept. Mark session complete:
 
 ```bash
-cp "$SKILL_DIR/profile_with_cache_template.py" LLM-CONTEXT/review-anal/cache/
-echo "Cache profiling template deployed"
-echo "Use LLM-CONTEXT/review-anal/cache/profile_with_cache_template.py to profile each candidate"
+BX_PERF_TMPDIR="$(cat /tmp/bx-perf-session 2>/dev/null)"
+
+# Run full test suite
+if [ -f "Makefile" ] && grep -q '^test' Makefile; then
+    make test 2>&1 | tee "$BX_PERF_TMPDIR/cache/final_test_run.txt"
+    TEST_EXIT=$?
+else
+    $PYTHON_CMD -m pytest tests/ -v 2>&1 | tee "$BX_PERF_TMPDIR/cache/final_test_run.txt"
+    TEST_EXIT=$?
+fi
+
+if [ $TEST_EXIT -eq 0 ]; then
+    echo "SUCCESS" > "$BX_PERF_TMPDIR/cache/status.txt"
+    echo "Performance analysis complete - all tests passing"
+else
+    echo "FAILED" > "$BX_PERF_TMPDIR/cache/status.txt"
+    echo "Performance analysis complete - TESTS FAILING (exit code: $TEST_EXIT)"
+fi
 ```
 
-### Step 6: Generate Performance Analysis Report
+After running the test suite, report:
+- Total findings presented, accepted, declined
+- Existing caches audited: list EFFECTIVE caches that were kept (from `existing_caches.txt`)
+- Final test suite status: pass or fail
 
-```bash
-echo "Generating performance analysis report..."
+## Common Mistakes
 
-cat > LLM-CONTEXT/review-anal/cache/performance_analysis_report.md << EOF
-# Performance Analysis Report
-
-Generated: $(date -Iseconds)
-
-## Executive Summary
-
-Systematic analysis of performance issues in the codebase:
-1. Identified pure functions (deterministic, no side effects)
-2. Found uncompiled regex patterns (re.match/search/findall with string literals)
-3. Cross-referenced with profiling data (frequently called)
-4. Prioritized candidates for detailed profiling
-
-## Methodology
-
-**All profiling done with REAL test suite, never synthetic benchmarks**
-
-- Criteria for pure functions: No I/O, no state modification, deterministic
-- Criteria for hot spots: >100 calls AND >0.1s cumulative time
-- Acceptance criteria: Cache hit rate >20% AND performance improvement >5%
-- Regex rule: All repeated regex calls must use re.compile() at module level
-
-## Make Target Profiling
-
-### make test
-$(cat LLM-CONTEXT/review-anal/cache/make_test_profiling.txt 2>/dev/null | tail -20 || echo "make test not available or not run")
-
-### make integrationtest
-$(cat LLM-CONTEXT/review-anal/cache/make_integrationtest_profiling.txt 2>/dev/null | tail -20 || echo "make integrationtest not available or not run")
-
-## Uncompiled Regex Patterns
-
-$(cat LLM-CONTEXT/review-anal/cache/uncompiled_regex.txt 2>/dev/null || echo "No uncompiled regex found")
-
-## Cache Candidates Found
-
-### All Pure Function Candidates
-
-$(cat LLM-CONTEXT/review-anal/cache/cache_candidates.txt 2>/dev/null || echo "No candidates file")
-
-### Hot Spots (Frequently Called)
-
-$(cat LLM-CONTEXT/review-anal/cache/hotspots.txt 2>/dev/null | head -30 || echo "No hotspots file")
-
-### High-Priority Candidates (Pure + Frequently Called)
-
-$(cat LLM-CONTEXT/review-anal/cache/priority_cache_candidates.txt 2>/dev/null || echo "No priority candidates")
-
-## Profiling Results
-
-### Template for Individual Profiling
-
-Use LLM-CONTEXT/review-anal/cache/profile_with_cache_template.py to profile each high-priority candidate.
-
-For each candidate:
-1. Copy template to profile_cache_FUNCTION_NAME.py
-2. Update MODULE_NAME and FUNCTION_NAME
-3. Run with Python 3.13
-4. Record results below
-
-### Results Summary
-
-| Function | Location | Calls | Cumtime | Cache Hit Rate | Improvement | Recommendation |
-|----------|----------|-------|---------|----------------|-------------|----------------|
-| (To be filled after profiling each candidate) |
-
-## Recommendations
-
-### Immediate Actions
-
-1. Compile all regex patterns at module level (no exceptions)
-2. Profile each high-priority cache candidate individually
-3. Apply @lru_cache only if BOTH criteria met:
-   - Cache hit rate >20%
-   - Performance improvement >5%
-
-### Rejected Optimizations
-
-Functions that should NOT be cached:
-- Non-deterministic functions (time, random, etc.)
-- Functions with side effects (I/O, state modification)
-- Functions with low hit rates (<20%)
-- Functions with marginal improvement (<5%)
-
-## Detailed Data
-
-- Uncompiled regex: LLM-CONTEXT/review-anal/cache/uncompiled_regex.txt
-- All candidates: LLM-CONTEXT/review-anal/cache/cache_candidates.txt
-- Hot spots: LLM-CONTEXT/review-anal/cache/hotspots.txt
-- Priority candidates: LLM-CONTEXT/review-anal/cache/priority_cache_candidates.txt
-- Profiling template: LLM-CONTEXT/review-anal/cache/profile_with_cache_template.py
-EOF
-
-echo "Performance analysis report generated"
-```
-
-## Output Format
-
-Return to orchestrator:
-
-```
-## Performance Analysis Complete
-
-**Uncompiled Regex Patterns:** [count]
-**Pure Function Candidates:** [count]
-**Hot Spots Identified:** [count]
-**High-Priority Candidates:** [count] (pure + frequently called)
-
-**Profiling Status:**
-- Profiling template created: Yes
-- Individual profiling needed: [count] candidates
-
-**Recommendations:**
-- Regex patterns to compile: [count]
-- Functions to cache (if profiling confirms): [count]
-- Functions to avoid caching: [count]
-
-**Generated Files:**
-- LLM-CONTEXT/review-anal/cache/uncompiled_regex.txt - Uncompiled regex patterns
-- LLM-CONTEXT/review-anal/cache/cache_candidates.txt - All pure function candidates
-- LLM-CONTEXT/review-anal/cache/hotspots.txt - Frequently called functions
-- LLM-CONTEXT/review-anal/cache/priority_cache_candidates.txt - High-priority candidates
-- LLM-CONTEXT/review-anal/cache/profile_with_cache_template.py - Template for profiling
-- LLM-CONTEXT/review-anal/cache/performance_analysis_report.md - Comprehensive report
-
-**Next Actions Required:**
-- Compile all flagged regex patterns at module level
-- Profile each high-priority cache candidate individually
-- Apply caching only if hit rate >20% AND improvement >5%
-
-**Ready for next step:** Yes (pending individual profiling)
-```
-
-```bash
-# Mark as complete
-echo "SUCCESS" > LLM-CONTEXT/review-anal/cache/status.txt
-echo "Performance analysis complete"
-echo "Status: SUCCESS"
-```
+| Mistake                                | Fix                                                     |
+|----------------------------------------|---------------------------------------------------------|
+| Dump all issues at once                | Present ONE at a time, wait for response                |
+| Suggest changes to accepted items      | Read project instructions first, filter out             |
+| Vague suggestions ("consider caching") | Show exact `@lru_cache` or `re.compile()` change        |
+| Skip saving declined items             | ALWAYS append to project instructions                   |
+| Not running tests after fixes          | Run tests after EVERY implementation                    |
+| Caching impure functions               | Never cache time/random/I/O/state-modifying             |
+| Caching with mutable args              | Convert list/dict to tuples; lru_cache needs hashable   |
+| Re-raising declined items              | Check accepted list from Step 1                         |
+| MINOR before SEVERE                    | Sort: SEVERE → MEDIUM → MINOR                          |
+| Ignoring existing ineffective caches   | Audit existing `@lru_cache`/`@cache`, propose removal   |
 
 ## Key Behaviors
 
-- **ALWAYS use REAL test suite** - Never synthetic benchmarks
-- **ALWAYS check regex compilation** - Every re.match/search/findall with a string literal is a finding
-- **ALWAYS measure cache hit rate** - Must be >20%
-- **ALWAYS measure performance gain** - Must be >5%
-- **ALWAYS profile individually** - Each candidate separately
-- **NEVER cache without evidence** - Show the profiling data
-- **NEVER cache non-deterministic functions** - time, random, etc.
-- **NEVER cache functions with side effects** - I/O, state modification
-- **ALWAYS save profiling data** to LLM-CONTEXT/
+- **ALWAYS use REAL test suite** — never synthetic benchmarks
+- **ALWAYS measure cache hit rate >20% AND improvement >5%**
+- **NEVER cache without evidence** — show the profiling data
+- **NEVER cache non-deterministic or side-effect functions**
+- **ONE issue at a time** — never batch-present
+- **ALWAYS audit existing caches** — verify they're still effective, propose removal if not
+- **RESPECT prior decisions** — check project instructions before suggesting

@@ -36,7 +36,10 @@ def find_hotspots(prof_file, min_calls=MIN_CALLS, min_cumtime=MIN_CUMTIME):
     return hotspots
 
 if __name__ == '__main__':
-    prof_file = sys.argv[1] if len(sys.argv) > 1 else 'LLM-CONTEXT/review-anal/perf/test_profile.prof'
+    if len(sys.argv) < 2:
+        print("Usage: find_hotspots.py <profile.prof>", file=sys.stderr)
+        sys.exit(1)
+    prof_file = sys.argv[1]
 
     hotspots = find_hotspots(prof_file)
 
