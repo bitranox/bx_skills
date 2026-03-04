@@ -54,13 +54,12 @@ class CellState(Enum):
 
 # ── CSS ───────────────────────────────────────────────────────────────────────
 
-APP_CSS = (
-    """\
-Screen {
+APP_CSS = f"""\
+Screen {{
     background: $background;
-}
+}}
 
-.screen-title {
+.screen-title {{
     dock: top;
     width: 100%;
     text-align: center;
@@ -68,125 +67,116 @@ Screen {
     text-style: bold;
     color: $primary;
     background: $panel;
-}
+}}
 
-.screen-subtitle {
+.screen-subtitle {{
     dock: top;
     width: 100%;
     text-align: center;
     padding: 0 0 1 0;
-    color: """
-    + SUBTEXT0
-    + """;
+    color: {SUBTEXT0};
     background: $panel;
-}
+}}
 
-.screen-body {
+.screen-body {{
     padding: 1 2;
-}
+}}
 
-.error-label {
+.error-label {{
     color: $error;
     text-style: bold;
     padding: 1 2;
     display: none;
-}
+}}
 
-.error-label.visible {
+.error-label.visible {{
     display: block;
-}
+}}
 
-.nothing-label {
+.nothing-label {{
     color: $warning;
     text-style: bold;
     padding: 1 2;
     display: none;
-}
+}}
 
-.nothing-label.visible {
+.nothing-label.visible {{
     display: block;
-}
+}}
 
-SelectionList {
+SelectionList {{
     background: $background;
     height: 1fr;
-}
+}}
 
-SelectionList:focus > .option-list--option-highlighted {
-    background: """
-    + SURFACE1
-    + """;
+SelectionList:focus > .option-list--option-highlighted {{
+    background: {SURFACE1};
     color: $foreground;
     text-style: bold;
-}
+}}
 
-SelectionList > .option-list--option-highlighted {
+SelectionList > .option-list--option-highlighted {{
     background: $surface;
     color: $foreground;
-}
+}}
 
-SelectionList > .option-list--option-hover {
+SelectionList > .option-list--option-hover {{
     background: $surface;
-}
+}}
 
-DataTable {
+DataTable {{
     background: $background;
     height: 1fr;
-}
+}}
 
-DataTable:focus > .datatable--cursor {
-    background: """
-    + SURFACE1
-    + """;
+DataTable:focus > .datatable--cursor {{
+    background: {SURFACE1};
     color: $foreground;
     text-style: bold;
-}
+}}
 
-DataTable > .datatable--header {
+DataTable > .datatable--header {{
     background: $panel;
     color: $primary;
     text-style: bold;
-}
+}}
 
-HelpScreen {
+HelpScreen {{
     align: center middle;
-}
+}}
 
-HelpScreen .help-container {
+HelpScreen .help-container {{
     width: 72;
     max-height: 80%;
     background: $surface;
     border: thick $primary;
     padding: 1 2;
-}
+}}
 
-HelpScreen .help-title {
+HelpScreen .help-title {{
     text-align: center;
     text-style: bold;
     color: $primary;
     padding-bottom: 1;
-}
+}}
 
-HelpScreen .help-body {
+HelpScreen .help-body {{
     color: $foreground;
-}
+}}
 
-RichLog {
+RichLog {{
     padding: 1 2;
-}
+}}
 
-.summary-line {
+.summary-line {{
     dock: bottom;
     height: 1;
     padding: 0 2;
     text-style: bold;
-    color: """
-    + TEAL
-    + """;
+    color: {TEAL};
     background: $panel;
-}
+}}
 """
-)
 
 
 # ── HelpScreen ────────────────────────────────────────────────────────────────
@@ -453,7 +443,7 @@ class SkillsScreen(InstallerScreen):
                     [scope],
                 )
             )
-        self.installer._plans = plans
+        self.installer.plans = plans
         self.app.push_screen(ConfirmScreen())
 
     def action_select_all(self) -> None:
@@ -515,7 +505,7 @@ class ConfirmScreen(InstallerScreen):
         yield Footer()
 
     def on_mount(self) -> None:
-        plans: list[InstallPlan] = self.installer._plans
+        plans: list[InstallPlan] = self.installer.plans
         skills: list[SkillInfo] = self.installer.skills
         log = self.query_one("#confirm-log", RichLog)
 
@@ -604,7 +594,7 @@ class ResultsScreen(InstallerScreen):
     @work(thread=True)
     def _execute_plans(self) -> None:
         worker = get_current_worker()
-        plans: list[InstallPlan] = self.installer._plans
+        plans: list[InstallPlan] = self.installer.plans
         log = self.query_one("#results-log", RichLog)
 
         succeeded = 0
@@ -680,7 +670,7 @@ class SkillsInstallerApp(App):
         # State — populated by screens
         self.skills: list[SkillInfo] = []
         self.selected_targets: list[CLITarget] = []
-        self._plans: list[InstallPlan] = []
+        self.plans: list[InstallPlan] = []
 
     def on_mount(self) -> None:
         self.register_theme(CATPPUCCIN_MOCHA)

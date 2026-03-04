@@ -110,6 +110,53 @@ def test_install_overwrites_existing(tmp_path: Path) -> None:
     assert (dest / "SKILL.md").read_text(encoding="utf-8") == "new content"
 
 
+def test_install_preserves_existing_on_copy_failure(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    src = tmp_path / "source" / "skill-fail"
+    src.mkdir(parents=True)
+    (src / "SKILL.md").write_text("new", encoding="utf-8")
+
+    dest = tmp_path / "dest" / "skill-fail"
+    dest.mkdir(parents=True)
+    (dest / "SKILL.md").write_text("original", encoding="utf-8")
+
+    import shutil as _shutil
+
+    _real_copytree = _shutil.copytree
+
+    def _failing_copytree(*args: object, **kwargs: object) -> object:
+        raise OSError("disk full")
+
+    monkeypatch.setattr("bx_skills.core.shutil.copytree", _failing_copytree)
+
+    plan = _make_plan(src, dest)
+    with pytest.raises(Exception, match="disk full"):
+        install_skill(plan)
+
+    assert (dest / "SKILL.md").read_text(encoding="utf-8") == "original"
+
+
+def test_install_cleans_staging_on_failure(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    src = tmp_path / "source" / "skill-staging"
+    src.mkdir(parents=True)
+    (src / "SKILL.md").write_text("data", encoding="utf-8")
+
+    dest = tmp_path / "dest" / "skills" / "skill-staging"
+    staging = dest.parent / f".{dest.name}.tmp"
+
+    def _failing_copytree(*args: object, **kwargs: object) -> object:
+        staging.mkdir(parents=True, exist_ok=True)
+        (staging / "partial.md").write_text("partial", encoding="utf-8")
+        raise OSError("interrupted")
+
+    monkeypatch.setattr("bx_skills.core.shutil.copytree", _failing_copytree)
+
+    plan = _make_plan(src, dest)
+    with pytest.raises(Exception, match="interrupted"):
+        install_skill(plan)
+
+    assert not staging.exists()
+
+
 def test_install_excludes_pycache(tmp_path: Path) -> None:
     src = tmp_path / "source" / "skill-d"
     src.mkdir(parents=True)

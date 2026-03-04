@@ -57,11 +57,11 @@ async def test_full_install_flow(tmp_path: Path, fake_home: Path, fake_cwd: Path
 
         # Screen 3: Confirm — verify plans were built
         assert isinstance(app.screen, ConfirmScreen)
-        assert len(app._plans) > 0
-        assert app._plans[0].action == SkillAction.INSTALL
+        assert len(app.plans) > 0
+        assert app.plans[0].action == SkillAction.INSTALL
 
     # Execute the plan directly via core (avoids ResultsScreen worker issue)
-    for plan in app._plans:
+    for plan in app.plans:
         install_skill(plan)
 
     installed = fake_home / ".test" / "skills" / "my-skill" / "SKILL.md"
@@ -101,11 +101,11 @@ async def test_full_uninstall_flow(tmp_path: Path, fake_home: Path, fake_cwd: Pa
         await pilot.pause()
 
         assert isinstance(app.screen, ConfirmScreen)
-        assert len(app._plans) == 1
-        assert app._plans[0].action == SkillAction.UNINSTALL
+        assert len(app.plans) == 1
+        assert app.plans[0].action == SkillAction.UNINSTALL
 
     # Execute uninstall directly via core
-    for plan in app._plans:
+    for plan in app.plans:
         uninstall_skill(plan)
 
     assert not installed_dir.exists()

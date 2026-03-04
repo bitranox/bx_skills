@@ -16,6 +16,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.10] - 2026-03-04
+
+### Fixed
+
+- **core**: `install_skill` now uses atomic staging — copies to a temporary directory
+  first, then swaps. If the copy fails mid-way, the existing installation is preserved
+  instead of being deleted with no rollback.
+- **catalog**: Fixed shfmt formatting in `bx_review_anal_sub_perf/compare_performance.sh`
+  (was breaking CI shellcheck stage).
+- **security**: Added `CVE-2025-8869` (pip 24.3.1) to pip-audit ignore list
+  (environment-level package, not a project dependency).
+
+### Changed
+
+- **core**: Slug index (`_SLUG_TO_TARGET`) is now eagerly computed at module load
+  instead of lazily populated on first call, eliminating a thread-safety issue.
+- **app**: Renamed `_plans` to `plans` on `SkillsInstallerApp` — the attribute is
+  shared state across screens and its public role is now honestly reflected.
+- **app**: CSS string refactored from fragile multi-part concatenation to a single
+  f-string with named placeholders.
+
+### Added
+
+- **packaging**: Added `py.typed` marker file (PEP 561) for downstream type checker
+  support.
+- **tests**: Added 2 new tests for atomic install rollback behavior
+  (`test_install_preserves_existing_on_copy_failure`,
+  `test_install_cleans_staging_on_failure`).
+
+### Removed
+
+- **dev**: Removed unused `hypothesis` dependency from dev extras.
+
 ## [1.2.9] - 2026-02-23
 
 ### Fixed

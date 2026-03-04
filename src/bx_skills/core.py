@@ -147,14 +147,7 @@ _TARGET_SLUGS: dict[str, str] = {
     "Windsurf": "windsurf",
 }
 
-_SLUG_TO_TARGET: dict[str, CLITarget] = {}
-
-
-def _build_slug_index() -> dict[str, CLITarget]:
-    if not _SLUG_TO_TARGET:
-        for target in CLI_TARGETS:
-            _SLUG_TO_TARGET[_TARGET_SLUGS[target.name]] = target
-    return _SLUG_TO_TARGET
+_SLUG_TO_TARGET: dict[str, CLITarget] = {_TARGET_SLUGS[t.name]: t for t in CLI_TARGETS}
 
 
 def get_target_slug(target: CLITarget) -> str:
@@ -169,7 +162,7 @@ def get_all_target_slugs() -> list[str]:
 
 def resolve_target_by_slug(slug: str) -> CLITarget | None:
     """Look up a CLITarget by its CLI slug, or None if unknown."""
-    return _build_slug_index().get(slug)
+    return _SLUG_TO_TARGET.get(slug)
 
 
 def detect_installed_targets() -> list[CLITarget]:
@@ -384,15 +377,26 @@ def _ignore_pycache(directory: str, contents: list[str]) -> set[str]:
 def install_skill(plan: InstallPlan) -> None:
     """Install or update a skill by copying from the catalog.
 
+    Uses a temporary staging directory so a failed copy does not destroy an
+    existing installation.
+
     Raises:
         SkillInstallError: If the filesystem operation fails.
     """
+    dest = plan.destination
+    parent = dest.parent
+    staging = parent / f".{dest.name}.tmp"
     try:
-        plan.destination.parent.mkdir(parents=True, exist_ok=True)
-        if plan.destination.exists():
-            shutil.rmtree(plan.destination)
-        shutil.copytree(plan.skill.source_path, plan.destination, ignore=_ignore_pycache)
+        parent.mkdir(parents=True, exist_ok=True)
+        if staging.exists():
+            shutil.rmtree(staging)
+        shutil.copytree(plan.skill.source_path, staging, ignore=_ignore_pycache)
+        if dest.exists():
+            shutil.rmtree(dest)
+        staging.rename(dest)
     except OSError as exc:
+        if staging.exists():
+            shutil.rmtree(staging, ignore_errors=True)
         raise SkillInstallError(f"{plan.skill.dir_name}: {exc}") from exc
 
 

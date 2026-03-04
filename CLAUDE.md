@@ -123,7 +123,7 @@ All targets delegate to `uvx bmk@latest`. Trailing arguments are forwarded.
 
 ## Testing
 
-- **Framework**: pytest with pytest-cov, pytest-asyncio, hypothesis
+- **Framework**: pytest with pytest-cov, pytest-asyncio
 - **Coverage threshold**: 80% (configured in pyproject.toml)
 - **CLI tests**: Use Click's `CliRunner` via `cli_runner` fixture
 - **TUI tests**: Use Textual's `App.run_test()` pilot pattern
