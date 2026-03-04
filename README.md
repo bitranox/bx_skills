@@ -66,23 +66,27 @@ Reload your shell or run `source ~/.bashrc` to activate.
 
 ## Skills
 
-| Skill                            | Description                                                                                                                  |
-|----------------------------------|------------------------------------------------------------------------------------------------------------------------------|
-| **brainstorming**                | Collaborative design exploration before implementation. Explores user intent, requirements, and design.                      |
-| **bx-bash-clean-architecture**   | Layered ports-and-adapters architecture for Bash 4.3+ scripts and multi-file projects.                                       |
-| **bx-bash-reference**            | Complete reference for GNU Bash 5.3 covering syntax, builtins, expansions, redirections, and features.                       |
-| **bx-enhance-code-quality**      | Scores a project 0–10, identifies issues by severity, and walks through fixes.                                               |
-| **bx-plan-executor**             | Executes a written implementation plan in batches with review checkpoints between batches.                                   |
-| **bx-plan-writer**               | Creates comprehensive implementation plans from specs or requirements, before touching code.                                 |
-| **bx-proxmox**                   | Proxmox VE 9.1.2 reference — installation, clusters, VMs, containers, storage, Ceph, SDN, firewall, HA, backups, and CLI.   |
-| **bx-python-clean-architecture** | Typed Python ports-and-adapters architecture with domain-driven design, UoW, outbox, and idempotency patterns.               |
-| **bx-python-libraries-to-use**   | Standardized library choices for Python projects ensuring consistency and enforcing preferred tools.                          |
-| **bx-rpyc**                      | RPyC reference — transparent remote procedure calls, distributed computing, netref proxies, and async patterns.              |
-| **bx-skill-writer**              | TDD-based skill documentation authoring — creating, editing, structuring, testing, and deploying SKILL.md files.             |
-| **bx-textual**                   | Textual TUI framework documentation reference — API docs, guides, CSS reference, FAQ, and widget catalog.                    |
-| **bx-uv**                        | Complete reference for uv (v0.10.2) — project setup, dependency management, lockfiles, tools, Docker, CI/CD, and migration.  |
-| **force-using-skills**           | Establishes that skills must be invoked whenever applicable before any response.                                              |
-| **md-table-formatting**          | Markdown table creation, editing, and reformatting with proper column alignment.                                              |
-| **systematic-debugging**         | Root-cause-first debugging methodology. Requires finding root cause before attempting fixes.                                  |
-| **test-driven-development**      | Write tests first, watch them fail, then write minimal code to pass.                                                         |
+| Skill                              | Description                                                                                                                 |
+|------------------------------------|-----------------------------------------------------------------------------------------------------------------------------|
+| **brainstorming**                  | Collaborative design exploration before implementation. Explores user intent, requirements, and design.                     |
+| **bx-bash-clean-architecture**     | Layered ports-and-adapters architecture for Bash 4.3+ scripts and multi-file projects.                                      |
+| **bx-bash-reference**              | Complete reference for GNU Bash 5.3 covering syntax, builtins, expansions, redirections, and features.                      |
+| **bx-enhance-code-quality**        | Scores a project 0-10, identifies issues by severity, and walks through fixes.                                              |
+| **bx-humanize-de**                 | Removes signs of AI-generated writing from German text. Detects and fixes 32 patterns.                                      |
+| **bx-humanize-en**                 | Removes signs of AI-generated writing from English text. Based on Wikipedia's "Signs of AI writing" guide (35 patterns).    |
+| **bx-performance**                 | Python performance review — caching opportunities, uncompiled regex, hot spot profiling, optimization validation.           |
+| **bx-plan-executor**               | Executes a written implementation plan in batches with review checkpoints between batches.                                  |
+| **bx-plan-writer**                 | Creates comprehensive implementation plans from specs or requirements, before touching code.                                |
+| **bx-proxmox**                     | Proxmox VE 9.1.2 reference — installation, clusters, VMs, containers, storage, Ceph, SDN, firewall, HA, backups, and CLI.   |
+| **bx-python-clean-architecture**   | Typed Python ports-and-adapters architecture with domain-driven design, UoW, outbox, and idempotency patterns.              |
+| **bx-python-libraries-to-use**     | Standardized library choices for Python projects ensuring consistency and enforcing preferred tools.                        |
+| **bx-rpyc**                        | RPyC reference — transparent remote procedure calls, distributed computing, netref proxies, and async patterns.             |
+| **bx-skill-writer**                | TDD-based skill documentation authoring — creating, editing, structuring, testing, and deploying SKILL.md files.            |
+| **bx-textual**                     | Textual TUI framework documentation reference — API docs, guides, CSS reference, FAQ, and widget catalog.                   |
+| **bx-uv**                          | Complete reference for uv (v0.10.2) — project setup, dependency management, lockfiles, tools, Docker, CI/CD, and migration. |
+| **bx_review_anal_sub_perf**        | Performance analysis sub-agent — profiling, benchmarking, hot spot identification, before/after comparison.                 |
+| **force-using-skills**             | Establishes that skills must be invoked whenever applicable before any response.                                            |
+| **md-table-formatting**            | Markdown table creation, editing, and reformatting with proper column alignment.                                            |
+| **systematic-debugging**           | Root-cause-first debugging methodology. Requires finding root cause before attempting fixes.                                |
+| **test-driven-development**        | Write tests first, watch them fail, then write minimal code to pass.                                                        |
 | **verification-before-completion** | Requires running verification commands and confirming output before making any success claims.                              |
