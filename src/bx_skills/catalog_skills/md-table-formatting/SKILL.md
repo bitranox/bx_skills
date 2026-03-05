@@ -9,13 +9,15 @@ description: Use when creating, editing, or reformatting markdown tables in any 
 
 Rules for consistently formatted, readable markdown tables. Misaligned tables are hard to scan in source view and may trigger linter warnings.
 
+**After editing or creating tables, reformat all `*.md` files under the current working directory** by running `reformat_tables.py -r` from this skill's directory.
+
 ## Rules
 
 ### 1. Pad all cells to column width
 
 Every cell in a column must be padded with trailing spaces to match the widest content in that column.
 
-```markdown
+```txt
 # BAD — unpadded
 | Name | Value |
 |------|-------|
@@ -33,7 +35,7 @@ Every cell in a column must be padded with trailing spaces to match the widest c
 
 No spaces between pipes and dashes in the separator row. Dash count = column width + 2 (matching the space-padded content cells).
 
-```markdown
+```txt
 # BAD — spaces around dashes
 | Name  | Value    |
 | ----- | -------- |
@@ -47,7 +49,7 @@ No spaces between pipes and dashes in the separator row. Dash count = column wid
 
 Each content cell has exactly one space after `|` and one space before `|`.
 
-```markdown
+```txt
 # BAD — inconsistent spacing
 |Name  |Value                         |
 | Name  |Value                         |
@@ -86,14 +88,20 @@ Tables inside fenced code blocks tagged with `markdown` or `md` are reformatted 
 For files with many tables, use `reformat_tables.py` in this directory rather than manual edits:
 
 ```bash
-# Reformat in-place
-python3 skills/md-table-formatting/reformat_tables.py file.md [file2.md ...]
+# Reformat all *.md files under current directory (recursive)
+python3 reformat_tables.py -r
+
+# Reformat all *.md files under a specific directory
+python3 reformat_tables.py -r docs/
+
+# Reformat specific files
+python3 reformat_tables.py file.md [file2.md ...]
 
 # Dry-run — reports what would change, exits 1 if changes needed
-python3 skills/md-table-formatting/reformat_tables.py --check file.md
+python3 reformat_tables.py --check -r
 
 # Create .bak backup before writing
-python3 skills/md-table-formatting/reformat_tables.py --backup file.md
+python3 reformat_tables.py --backup file.md
 ```
 
 Safe by design: reformats tables inside blockquotes and `` ```markdown ``/`` ```md `` fenced code blocks, skips all other fenced code blocks, preserves alignment markers (`:---`, `:---:`, `---:`), handles pipes inside backtick spans, and bails on tables with inconsistent column counts.

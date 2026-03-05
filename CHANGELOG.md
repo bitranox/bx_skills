@@ -16,6 +16,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.12] - 2026-03-05
+
+### Changed
+
+- **catalog/md-table-formatting**: Added recursive directory mode (`-r` flag) to `reformat_tables.py` for batch-reformatting all `*.md` files under a directory.
+- **catalog/md-table-formatting**: Updated SKILL.md with new usage examples and instruction to run reformatter after table edits.
+- **catalog/md-table-formatting**: Fixed code block language tags in SKILL.md examples (`markdown` → `txt`).
+
 ## [1.2.11] - 2026-03-04
 
 ### Changed

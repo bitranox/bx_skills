@@ -15,6 +15,7 @@ Usage:
     python3 reformat_tables.py file.md [file2.md ...]
     python3 reformat_tables.py --check file.md     # dry-run, exit 1 if changes needed
     python3 reformat_tables.py --backup file.md    # creates file.md.bak before writing
+    python3 reformat_tables.py -r [dir]            # find and reformat all *.md under dir (default: .)
 """
 
 import re
@@ -280,6 +281,7 @@ def main():
     args = sys.argv[1:]
     check_only = False
     backup = False
+    recursive = False
     files = []
 
     for arg in args:
@@ -287,6 +289,8 @@ def main():
             check_only = True
         elif arg in ("--backup", "-b"):
             backup = True
+        elif arg in ("--recursive", "-r"):
+            recursive = True
         elif arg in ("--help", "-h"):
             print(__doc__.strip())
             sys.exit(0)
@@ -296,16 +300,28 @@ def main():
         else:
             files.append(arg)
 
-    if not files:
+    if recursive:
+        dirs = [Path(f) for f in files] if files else [Path(".")]
+        files = []
+        for d in dirs:
+            if not d.is_dir():
+                print(f"Error: not a directory: {d}", file=sys.stderr)
+                sys.exit(1)
+            files.extend(sorted(d.rglob("*.md")))
+        if not files:
+            print("No .md files found.", file=sys.stderr)
+            sys.exit(0)
+    elif not files:
         print(
-            "Usage: python3 reformat_tables.py [--check] [--backup] <file.md> [...]",
+            "Usage: python3 reformat_tables.py [--check] [--backup] [--recursive] <file.md|dir> [...]",
             file=sys.stderr,
         )
         sys.exit(1)
 
     any_changed = False
     for path in files:
-        if not Path(path).is_file():
+        path = Path(path)
+        if not path.is_file():
             print(f"Error: not a file: {path}", file=sys.stderr)
             sys.exit(1)
         changed = reformat_file(path, check_only=check_only, backup=backup)
