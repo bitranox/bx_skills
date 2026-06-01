@@ -16,6 +16,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.13] - 2026-06-01
+
+### Changed
+
+- **ci**: Updated the CI/CD workflow matrix and bumped the Codecov GitHub Action to v6.
+- **ci**: `pip-audit` now reports findings as warnings only to reduce noise from environment-level packages.
+- **security**: Reconciled the `pip-audit` CVE exclusion list — removed stale entries for packages
+  that have since been upgraded (setuptools, pip, pygments, and others) and added the currently
+  flagged environment-only advisories (`CVE-2026-44405` for paramiko, `GHSA-4gg8-gxpx-9rph` for uv),
+  each with inline documentation.
+- **docs**: Removed the Snyk badge from README.
+- **catalog/tfbpr**: Refined the `tfbpr` release-pipeline command documentation.
+- **catalog/bx-python-libraries-to-use**: Minor SKILL.md update.
+
 ## [1.2.12] - 2026-03-05
 
 ### Changed
