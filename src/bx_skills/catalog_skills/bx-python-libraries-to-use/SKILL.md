@@ -31,7 +31,7 @@ Standardized library choices for all Python projects. Ensures consistency, avoid
 | TOML                 | `rtoml`                                 | `tomllib`, `tomli`                   |
 | JSON                 | `orjson`                                | `json` stdlib                        |
 | YAML                 | `ruamel.yaml`                           | `PyYAML`                             |
-| HTTP                 | `httpx`                                 | `requests`                           |
+| HTTP                 | `httpx2`                                | `requests, httpx`                    |
 | Compression (stream) | `isal`                                  | `gzip` stdlib                        |
 | Compression (store)  | `libdeflate`                            | `gzip` stdlib                        |
 | Paths                | `pathlib.Path`                          | `os.path`                            |
