@@ -444,7 +444,7 @@ Let's look at an example which looks up word definitions from an [api](https://d
 > **Note**
 >
 >
-> You will need to install [httpx](https://www.python-httpx.org/) with `pip install httpx` to run this example.
+> You will need to install [httpx2](https://pypi.org/project/httpx2/) with `pip install httpx2` to run this example.
 
 
 **dictionary.py**
@@ -454,9 +454,9 @@ Let's look at an example which looks up word definitions from an [api](https://d
 import asyncio
 
 try:
-    import httpx
+    import httpx2
 except ImportError:
-    raise ImportError("Please install httpx with 'pip install httpx' ")
+    raise ImportError("Please install httpx2 with 'pip install httpx2' ")
 
 from rich.json import JSON
 
@@ -486,7 +486,7 @@ class DictionaryApp(App):
     async def lookup_word(self, word: str) -> None:
         """Looks up a word."""
         url = f"https://api.dictionaryapi.dev/api/v2/entries/en/{word}"
-        async with httpx.AsyncClient() as client:
+        async with httpx2.AsyncClient() as client:
             results = (await client.get(url)).text
 
         if word == self.query_one(Input).value:

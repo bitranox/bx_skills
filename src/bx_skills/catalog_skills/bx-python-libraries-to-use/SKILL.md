@@ -365,8 +365,9 @@ with open("config.yaml", "w") as f:
 
 ## HTTP/REST Calls
 
-**Use `httpx`** for all HTTP requests. Do not use `requests`.
+**Use `httpx2`** for all HTTP requests. Do not use `requests` or the original `httpx`.
 
+- `httpx2` is the actively maintained, Pydantic-stewarded continuation of `httpx` (drop-in API; only the import name changes)
 - Modern async-first design with sync support
 - HTTP/1.1 and HTTP/2 support
 - Connection pooling and keep-alive by default
@@ -374,21 +375,21 @@ with open("config.yaml", "w") as f:
 - Timeout configuration required (no silent hangs)
 
 ```python
-import httpx
+import httpx2
 
 # Synchronous usage
-response = httpx.get("https://api.example.com/data", timeout=10.0)
+response = httpx2.get("https://api.example.com/data", timeout=10.0)
 data = response.json()
 
 # With client (recommended for multiple requests)
-with httpx.Client(timeout=30.0) as client:
+with httpx2.Client(timeout=30.0) as client:
     response = client.post(
         "https://api.example.com/submit",
         json={"key": "value"},
     )
 
 # Async usage
-async with httpx.AsyncClient(timeout=30.0) as client:
+async with httpx2.AsyncClient(timeout=30.0) as client:
     response = await client.get("https://api.example.com/data")
 ```
 

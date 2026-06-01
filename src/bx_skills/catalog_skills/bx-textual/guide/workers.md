@@ -28,7 +28,7 @@ The following app uses [httpx](https://www.python-httpx.org/) to get the current
 
 
 ```python
-import httpx
+import httpx2
 from rich.text import Text
 
 from textual.app import App, ComposeResult
@@ -56,7 +56,7 @@ class WeatherApp(App):
         if city:
             # Query the network API
             url = f"https://wttr.in/{city}"
-            async with httpx.AsyncClient() as client:
+            async with httpx2.AsyncClient() as client:
                 response = await client.get(url)
                 weather = Text.from_ansi(response.text)
                 weather_widget.update(weather)
@@ -98,7 +98,7 @@ This is because we are making a request to the weather API within a message hand
 To resolve this we can use the `run_worker` method which runs the `update_weather` coroutine (`async def` function) in the background. Here's the code:
 
 ```python
-import httpx
+import httpx2
 from rich.text import Text
 
 from textual.app import App, ComposeResult
@@ -126,7 +126,7 @@ class WeatherApp(App):
         if city:
             # Query the network API
             url = f"https://wttr.in/{city}"
-            async with httpx.AsyncClient() as client:
+            async with httpx2.AsyncClient() as client:
                 response = await client.get(url)
                 weather = Text.from_ansi(response.text)
                 weather_widget.update(weather)
@@ -161,7 +161,7 @@ An alternative to calling `run_worker` manually is the `work` decorator, which a
 Let's use this decorator in our weather app:
 
 ```python
-import httpx
+import httpx2
 from rich.text import Text
 
 from textual import work
@@ -191,7 +191,7 @@ class WeatherApp(App):
         if city:
             # Query the network API
             url = f"https://wttr.in/{city}"
-            async with httpx.AsyncClient() as client:
+            async with httpx2.AsyncClient() as client:
                 response = await client.get(url)
                 weather = Text.from_ansi(response.text)
                 weather_widget.update(weather)
@@ -265,7 +265,7 @@ You can handle this message by defining an `on_worker_state_changed` event handl
 For instance, here is how we might log the state of the worker that updates the weather:
 
 ```python
-import httpx
+import httpx2
 from rich.text import Text
 
 from textual import work
@@ -296,7 +296,7 @@ class WeatherApp(App):
         if city:
             # Query the network API
             url = f"https://wttr.in/{city}"
-            async with httpx.AsyncClient() as client:
+            async with httpx2.AsyncClient() as client:
                 response = await client.get(url)
                 weather = Text.from_ansi(response.text)
                 weather_widget.update(weather)

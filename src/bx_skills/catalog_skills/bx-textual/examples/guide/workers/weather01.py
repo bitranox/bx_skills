@@ -1,4 +1,4 @@
-import httpx
+import httpx2
 from rich.text import Text
 
 from textual.app import App, ComposeResult
@@ -26,7 +26,7 @@ class WeatherApp(App):
         if city:
             # Query the network API
             url = f"https://wttr.in/{city}"
-            async with httpx.AsyncClient() as client:
+            async with httpx2.AsyncClient() as client:
                 response = await client.get(url)
                 weather = Text.from_ansi(response.text)
                 weather_widget.update(weather)

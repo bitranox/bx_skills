@@ -120,7 +120,7 @@ dependencies = []  # core stays zero/low deps
 
 [project.optional-dependencies]
 adapters-sql = ["psycopg[binary]>=3.2"]
-adapters-http = ["httpx>=0.27"]
+adapters-http = ["httpx2>=2.2.0"]
 dev = [
   "pytest>=8.2","pytest-asyncio>=0.24","ruff>=0.5","pyright>=1.1",
   "import-linter>=2.0","coverage[toml]>=7.6","mkdocs-material>=9.5",
